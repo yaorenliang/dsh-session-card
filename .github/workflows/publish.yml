@@ -1,0 +1,75 @@
+name: Publish
+
+# Trusted publishing: npm trusts this repository and this filename, and the token
+# is minted per run from the OIDC identity. No secret is stored anywhere.
+#
+# A tag push needs no browser and no personal token: the same job creates the
+# release for that tag and publishes the package.
+#
+# Every step is idempotent, so re-running on an old tag only repairs what is
+# missing.
+on:
+  release:
+    types: [published]
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      # Trusted publishing needs npm 11.5 or newer.
+      - run: npm install --global npm@latest
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+      # The notes are already written in CHANGELOG.md; a generated compare link
+      # is not a description of what changed.
+      - name: Release this tag
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            exit 0
+          fi
+          notes=$(mktemp)
+          node -e "
+            const fs = require('node:fs')
+            const changelog = fs.readFileSync('CHANGELOG.md', 'utf8')
+            const tag = process.argv[1].replace(/^v/, '')
+            const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\\\$&')
+            const start = changelog.search(new RegExp('^## ' + escaped, 'm'))
+            if (start < 0) process.exit(0)
+            const rest = changelog.slice(start)
+            const next = rest.slice(1).search(/^## /m)
+            fs.writeFileSync(process.argv[2], next < 0 ? rest.trim() : rest.slice(0, next + 1).trim())
+          " "$tag" "$notes"
+          if [ -s "$notes" ]; then
+            gh release create "$tag" --title "$tag" --notes-file "$notes"
+          else
+            gh release create "$tag" --title "$tag" --generate-notes
+          fi
+      # Publishing twice for one version is the one mistake that cannot be taken
+      # back, so the registry itself decides whether this run publishes.
+      - name: Publish to npm
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if npm view "@yaorenliang/dsh-session-card@$version" version >/dev/null 2>&1; then
+            echo "@yaorenliang/dsh-session-card@$version is already published; nothing to do"
+            exit 0
+          fi
+          npm publish --access public

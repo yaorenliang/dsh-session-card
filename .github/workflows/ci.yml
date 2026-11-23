@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      # A scoped package's tarball is named <scope>-<name>-<version>.tgz, so the
+      # glob has to expect the scope or this step stays green while proving
+      # nothing. The point is that the packed artifact really exists and really
+      # carries both halves of the plugin.
+      - name: Packed artifact carries both halves
+        run: |
+          pnpm pack --pack-destination /tmp
+          tgz=$(ls /tmp/yaorenliang-dsh-session-card-*.tgz)
+          echo "built $tgz"
+          tar -tzf "$tgz" | grep -qx 'package/lib/index.js'
+          tar -tzf "$tgz" | grep -qx 'package/lib/client.js'
+          tar -tzf "$tgz" | grep -qx 'package/cordis.patch.yml'

@@ -1,96 +1,107 @@
 # dsh-session-card
 
-侧边栏里每个会话一行，标题下面再加两行：**你最后问的那句话**，以及**这个会话用的哪个 agent 预设**、正在跑的子智能体和后台任务。
+[中文](./README.zh.md) | English
 
-DSH 官方的会话行只有一行（标题 + 时间 + 图标），会话多了以后分不清哪个是哪个。这个插件在你最近问过的问题上补一行摘要，让侧边栏自己说明它是谁。
+Every session in the sidebar gets two more lines under its title: **the question you last asked**, and **which agent preset the session runs** together with the subagents and background tasks it has running.
+
+The official session row is one line — a title, a time, an icon — so once the list grows long, every row reads like every other row. This plugin adds a summary of what you last asked, so the sidebar says which session is which on its own.
 
 ## Screenshots
 
-![dsh-session-card showcase preview: the three-line session card in the sidebar, with the title, the last prompt and the agent preset](docs/screenshot-card.png)
+![dsh-session-card screenshot: three-line session cards in the sidebar, each with its title, last question and agent preset](docs/screenshot-card-en.png)
 
-侧边栏在真实界面里的样子，图里四条注解说明每一行是什么。
+The sidebar as it looks in the real UI; four annotations in the picture name each line and what it carries.
 
-## 长什么样
+## What you get
 
-- **第 1 行**：官方标题，逐字沿用（超长省略、hover 操作、置顶图标、右键菜单全部保留）。
-- **第 2 行**：你最近一次提问，单行省略，12px 灰色；hover 时提亮一档。
-- **第 3 行**：徽标，从左到右三个。
-  - **预设**：官方的 agent-preset 图标（三个节点的图）+ 预设 ID 原文，如 `ptc`、`standard`。ID 不做翻译也不做缩写——DSH 自己在需要稳定名字的地方就用这个 ID，自造缩写只会在出现第五种预设时失效。hover 是「智能体预设 ptc」。
-  - **子智能体 / 后台任务**：官方那两个图标（users / layers）+ 计数，不写字——「子智能体 0」「后台任务 0」这种长文案在 200px 宽的侧边栏里放不下。hover 有完整一句话（「0 个子智能体运行中」）。子智能体徽标琥珀底，后台任务徽标卡片灰底；没有在跑的时候两个徽标**留在原地转灰**，计数写 0。
+- **Line 1** — the official title, kept verbatim: truncation, hover actions, the pin icon and the context menu all still work.
+- **Line 2** — your most recent question, one line, ellipsised, 12px in the tertiary label colour; a step brighter on hover.
+- **Line 3** — the badges, three of them, left to right:
+  - **Preset** — the official agent-preset glyph (the three-node graph) plus the preset id as written, `ptc` or `standard`. The id is neither translated nor abbreviated: DSH itself uses that id wherever a stable name is needed, and an invented abbreviation would only break the day a fifth preset appears. The tooltip reads "Agent preset ptc".
+  - **Subagents / background tasks** — the official users and layers glyphs plus a count, no words: a sentence like "0 subagents" does not fit a sidebar row about 200px wide. The tooltip carries the full sentence ("0 subagents running"). Only a running subagent keeps a fill (the platform's amber), because that is the one thing on the line worth catching the eye; the job count is a fact about the session, not an activity, so it is set as plain dimmed text. While nothing runs, both badges **stay where they are and drop to grey**, with a 0.
 
-  预设徽标是**唯一常驻**的那个：它没有计数可以归零，所以不受「徽标常驻」开关管；会话还没有组装 agent（blank）时它不出现。
+  The preset badge is the one that never falls idle — it has no count that can reach zero, so the "keep badges while idle" switch has nothing to say about it. A session that has not assembled an agent yet (blank) simply omits it.
 
-默认（徽标常驻）行高恒定 62px（标题 20 + 2 + 提问 16 + 2 + 徽标 16 + 上下各 3px 内填充）：一个会话从空闲、跑活到跑完，行高始终不变，侧边栏不会上下跳。关掉「徽标常驻」后徽标只在有活时才出现，只剩提问行时 45px；什么都没得说就**整行退回官方 32px**。行高由内容推导（`grid-template-rows: 20px auto auto`），不靠写死 `min-height`，所以不存在某个组合下多留一条空行的情况。
+By default (badges keep their place) the row height holds at 62px — a 20px title, a 16px question line and a 16px badge line, 2px between each, plus the card's own internal padding — so a session measures the same from idle to working to finished, and the sidebar never jumps. With "keep badges while idle" off, badges appear only while work runs: 45px with just the question line, and nothing to say falls **all the way back to the official 32px**. Height is derived from the content (`grid-template-rows: 20px auto auto`) rather than declared as a `min-height`, so no combination of lines can leave a stray empty track behind.
 
-卡片出现时，第 2、3 行在自己占的格子里由上往下展开（约 220ms）；`prefers-reduced-motion` 下不做动画。
+When a card appears, lines 2 and 3 open downward inside the cells they already occupy (about 220ms); under `prefers-reduced-motion` nothing animates.
 
-## 什么时候不打扰
+## When it stays out of the way
 
-- **归档会话**：完全退回官方展示形式，不画卡片。
-- **行结构不认识**（DSH 升级改了行 DOM）：这一行不画，其余照常。
-- **设置里关掉**：全量退回官方。
+- **Archived sessions** — drop back to the official presentation entirely; no card is drawn.
+- **Unrecognised row structure** (a DSH upgrade changed the row DOM) — that row is skipped, the rest carry on.
+- **Switched off in Settings** — everything falls back to the official row.
 
-设置项在「设置 → 通用设置」底部：启用卡片 / 显示提问行 / 显示运行徽标 / 徽标常驻（默认开启）。状态存 `localStorage` 的 `dsh-session-card:settings`。
+The switches live at the bottom of **Settings → General**: enable cards / show the question line / show running badges / keep badges while idle (on by default). State is kept in `localStorage` under `dsh-session-card:settings`.
 
-## 数据从哪来
+## Where the data comes from
 
-| 那一行 | 来源 |
+| Line | Source |
 | --- | --- |
-| 用户最近一次提问 | `turnOutline` 投影（会话日志的官方投影，不另解析日志） |
-| 后台任务数 | `jobs.list()`，只数本会话自己的 running |
-| 子智能体数 | 客户端读会话列表的 `parentId` + `running` 现算 |
-| agent 预设 | 同一个会话列表里的 `projectionValues.agentPreset`（官方 `agentPreset` 投影） |
+| Your most recent question | the `turnOutline` projection (the official projection of the turn log; the log is not parsed again) |
+| Background task count | `jobs.list()`, counting only what this session owns and is running |
+| Subagent count | computed in the browser from `parentId` + `running` in the session list |
+| Agent preset | `projectionValues.agentPreset` from that same session list (the official `agentPreset` projection) |
 
-**预设这一项是零成本的**：侧边栏渲染时本来就拿着这个快照（`title`、`tokenUsage`、`agentPreset` 一起下发），统计子智能体那趟循环已经跑过一遍了，读它只是在同一趟里多取一个字段——不发请求、不读磁盘、不新增循环。
+**The preset costs nothing.** The sidebar already holds that snapshot while it renders (`title`, `tokenUsage` and `agentPreset` arrive together), and the pass that counts running subagents has already walked it, so reading the preset is one more field on the same pass — no request, no disk read, no extra loop.
 
-Host 只开一个只读路由 `GET /api/dsh-session-card/rows?ids=…`，走 DSH 自己的鉴权围栏，`cache-control: no-store`。会话正文不出本机、不落新日志。
+The Host opens exactly one read-only route, `GET /api/dsh-session-card/rows?ids=…`, behind DSH's own authentication fence, with `cache-control: no-store`. Session bodies never leave the machine and no new log line is written.
 
-浏览器会把上一次的答案留在本机（`localStorage` 的 `dsh-session-card:facts`，7 天后过期），用于刷新页面时第一帧就把卡片画出来，网络答案回来后就地纠正——这样刷新不会先闪一下官方单行行再变成卡片。
+The browser keeps the previous answer on this machine (`localStorage`, key `dsh-session-card:facts`, expiring after 7 days) so a reload can paint the card with the first frame and correct it in place once the network answer arrives — a refresh never shows the official one-line row first and then snaps into a card.
 
-## 装
+## Install
 
 ```sh
-dsh plugin --profile <你的 profile> add @yaorenliang/dsh-session-card
+dsh plugin --profile <your profile> add @yaorenliang/dsh-session-card
 ```
 
-准备好新版本、也可以直接从仓库出包安装：
+To build a new version first, or install straight from the repository:
 
 ```sh
 git clone git@github.com:yaorenliang/dsh-session-card.git
 cd dsh-session-card && pnpm install && pnpm build && pnpm pack
-dsh plugin --profile <你的 profile> add ./yaorenliang-dsh-session-card-0.1.0.tgz
+dsh plugin --profile <your profile> add ./yaorenliang-dsh-session-card-0.1.1.tgz   # the name carries the version you packed
 ```
 
-**装完要重启 DSH 实例**：profile 的插件表在启动时读取，Loader 没有文件监视，热加载只会重建客户端 bundle，不会把新插件挂进 Host。
+**Restart the DSH instance afterwards.** A profile's plugin table is read at boot and the Loader watches no files: hot reload rebuilds the client bundle but never mounts a newly added Host plugin.
 
-要求 DSH `>=0.2.2-rc.1 <0.3.0`、Node `>=20`。
+## Requirements
 
-## 开发
+- DeepSeek Harness `>=0.2.2-rc.1 <0.3.0`, Node `>=20`.
+
+## Development
 
 ```sh
 pnpm install
 pnpm verify   # tsc --noEmit && vitest run && node scripts/build.mjs
 ```
 
-构建产物：`lib/index.js`（Host 半，ESM）与 `lib/client.js`（浏览器半，`__ModuleLoader__` 包装）。`lib/types/` 是声明文件。
+Build products: `lib/index.js` (the Host half, ESM) and `lib/client.js` (the browser half, wrapped for `__ModuleLoader__`). `lib/types/` holds the declarations.
 
-**改样式改 `src/client/card.css` 与 `settings.css`，然后重跑 `pnpm build`**——两个 `*-stylesheet.ts` 是生成物，别手改。
+**Change styles in `src/client/card.css` and `settings.css`, then re-run `pnpm build`** — the two `*-stylesheet.ts` modules are generated; do not edit them by hand.
 
-## 结构
+## Layout
 
 ```
 src/
-  core/       prompt 摘要、子会话计数、预设读取（纯函数，有单测）
-  host/       唯一的只读路由 + 结构化 Host 契约
-  client/     行绘制、设置行、轮询与样式注入
+  core/       prompt summarising, subagent counting, preset reading (pure, unit-tested)
+  host/       the one read-only route + the Host contract it needs
+  client/     row painting, the settings row, polling and style injection
 docs/
-  showcase.html       介绍页（截图就是从它来的，可直接在浏览器打开）
-  screenshot-card.png README 里那张图
+  showcase.html           the showcase page (open it in a browser; the screenshot renders from it)
+  showcase.en.html        the same page in English
+  screenshot-card.png     the picture in README.zh.md
+  screenshot-card-en.png  the picture above
 ```
 
-## 边界
+## Boundaries
 
-这个插件只加行内两行 DOM 与一份样式表，**不接管**官方行的点击、拖拽、右键菜单、hover 操作，也不改会话数据。若同时装了其他同样改写会话行 DOM 的插件，可能互相覆盖——那种情况关掉其中一个。
+The plugin adds two lines of in-row DOM and one stylesheet. It **never takes over** the official row's click, drag, context menu or hover actions, and never changes session data. If another plugin that also rewrites the session-row DOM is installed at the same time, the two may overwrite each other — switch one of them off.
+
+## Documentation
+
+- [Changelog](./CHANGELOG.md) · [中文](./CHANGELOG.zh.md)
+- [Security policy](./SECURITY.md) · [中文](./SECURITY.zh.md)
 
 ## License
 

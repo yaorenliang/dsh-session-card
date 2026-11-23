@@ -2,6 +2,8 @@
 
 [中文](./README.zh.md) | English
 
+[![npm version](https://img.shields.io/npm/v/@yaorenliang/dsh-session-card)](https://www.npmjs.com/package/@yaorenliang/dsh-session-card) [![license](https://img.shields.io/npm/l/@yaorenliang/dsh-session-card)](./LICENSE)
+
 Every session in the sidebar gets two more lines under its title: **the question you last asked**, and **which agent preset the session runs** together with the subagents and background tasks it has running.
 
 The official session row is one line — a title, a time, an icon — so once the list grows long, every row reads like every other row. This plugin adds a summary of what you last asked, so the sidebar says which session is which on its own.

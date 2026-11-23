@@ -1,10 +1,16 @@
 /**
- * The card's two badge sentences.
+ * The card's own sentences.
  *
- * The badge itself shows only the platform glyph and the number — a sidebar
- * row is around 200px wide and a sentence would not fit — so these strings
- * are the tooltip that explains what the number counts, and they keep the
- * wording the official sidebar already uses for the same two facts.
+ * The badges show only the platform glyph and the value — a sidebar row is
+ * around 200px wide and a sentence would not fit — so their strings are the
+ * tooltip that explains what the value is, and they keep the wording the
+ * official sidebar already uses for the same facts.
+ *
+ * The preset badge shows the preset's own id (ptc, standard, …) untouched: the
+ * id is what DSH calls it everywhere a stable name is needed, and inventing an
+ * abbreviation here would go stale the moment a deployment declared a fifth
+ * preset. Only its tooltip is translated.
+ *
  * English is the fallback locale.
  */
 
@@ -16,8 +22,9 @@ const ZH = {
   'agents.other': '{n} 个子智能体运行中',
   'jobs.one': '{n} 个后台任务',
   'jobs.other': '{n} 个后台任务',
+  'preset.hint': '智能体预设 {t}',
   'settings.title': '会话行卡片',
-  'settings.description': '在会话标题下显示你最后问的那句话，以及正在运行的子智能体和后台任务。',
+  'settings.description': '在会话标题下显示你最后问的那句话，以及这一族正在运行的子智能体和后台任务。',
   'settings.enable': '启用卡片',
   'settings.showPrompt': '显示提问行',
   'settings.showChips': '显示运行徽标',
@@ -31,8 +38,9 @@ const EN: Record<MessageKey, string> = {
   'agents.other': '{n} subagents running',
   'jobs.one': '{n} background task',
   'jobs.other': '{n} background tasks',
+  'preset.hint': 'Agent preset {t}',
   'settings.title': 'Session row cards',
-  'settings.description': 'Show what you last asked, plus running subagents and background tasks, under each session title.',
+  'settings.description': 'Show what you last asked, and the subagents and background tasks running under this session, beneath each session title.',
   'settings.enable': 'Enable cards',
   'settings.showPrompt': 'Show the question line',
   'settings.showChips': 'Show running badges',
@@ -47,7 +55,7 @@ export function resolveLocale(tag: string | undefined): CardLocale {
 }
 
 /**
- * Translate one message, substituting `{n}`.
+ * Translate one message, substituting `{n}` and `{t}`.
  * @param locale - the resolved language.
  * @param key - the message key.
  * @param params - substitution values.
@@ -56,8 +64,10 @@ export function resolveLocale(tag: string | undefined): CardLocale {
 export function translate(
   locale: CardLocale,
   key: MessageKey,
-  params?: { readonly n?: number },
+  params?: { readonly n?: number; readonly t?: string },
 ): string {
-  const text = DICTS[locale][key] ?? EN[key]
-  return params?.n === undefined ? text : text.replace('{n}', String(params.n))
+  let text = DICTS[locale][key] ?? EN[key]
+  if (params?.n !== undefined) text = text.replace('{n}', String(params.n))
+  if (params?.t !== undefined) text = text.replace('{t}', params.t)
+  return text
 }

@@ -16,7 +16,7 @@ export const ROLE_ATTR = 'data-dsc-role'
 /** Set on a line that currently has nothing to show. */
 export const EMPTY_ATTR = 'data-dsc-empty'
 
-/** Set on a chip, naming what it counts. */
+/** Set on a chip, naming which preset it reports. */
 export const CHIP_ATTR = 'data-dsc-chip'
 
 /** Set on a chip reporting nothing running, so it reads quiet. */

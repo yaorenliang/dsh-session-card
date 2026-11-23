@@ -44,7 +44,7 @@ describe('paintRow', () => {
     withDoc((doc) => {
       const row = makeRow(doc, 'a')
       doc.body.append(row)
-      paintRow(row, { prompt: '你好', jobs: 0 }, 0, BASE)
+      paintRow(row, { prompt: '你好', jobs: 0 }, 0, undefined, BASE)
       expect(row.getAttribute(ROW_ATTR)).toBe('slim')
       const prompt = row.querySelector('[data-dsc-role="prompt"]')
       expect(prompt?.textContent).toBe('你好')
@@ -57,7 +57,7 @@ describe('paintRow', () => {
     withDoc((doc) => {
       const row = makeRow(doc, 'a')
       doc.body.append(row)
-      paintRow(row, { jobs: 2 }, 0, BASE)
+      paintRow(row, { jobs: 2 }, 0, undefined, BASE)
       const prompt = row.querySelector('[data-dsc-role="prompt"]')
       expect(prompt?.hasAttribute('data-dsc-empty')).toBe(true)
       const chips = row.querySelector('[data-dsc-role="chips"]')
@@ -70,7 +70,7 @@ describe('paintRow', () => {
     withDoc((doc) => {
       const row = makeRow(doc, 'a')
       doc.body.append(row)
-      paintRow(row, { prompt: '你好', jobs: 1 }, 2, BASE)
+      paintRow(row, { prompt: '你好', jobs: 1 }, 2, undefined, BASE)
       expect(row.getAttribute(ROW_ATTR)).toBe('full')
       expect(row.querySelectorAll('[data-dsc-chip]').length).toBe(2)
     })
@@ -80,7 +80,7 @@ describe('paintRow', () => {
     withDoc((doc) => {
       const row = makeRow(doc, 'a')
       doc.body.append(row)
-      const kept = paintRow(row, { jobs: 0 }, 0, { ...BASE, stickyChips: true })
+      const kept = paintRow(row, { jobs: 0 }, 0, undefined, { ...BASE, stickyChips: true })
       expect(kept).toBe(true)
       expect(row.getAttribute(ROW_ATTR)).toBe('full')
       const chips = row.querySelectorAll('[data-dsc-chip]')
@@ -98,8 +98,8 @@ describe('paintRow', () => {
       const row = makeRow(doc, 'a')
       doc.body.append(row)
       const options = { ...BASE, stickyChips: true }
-      paintRow(row, { jobs: 0 }, 0, options)
-      paintRow(row, { jobs: 3 }, 1, options)
+      paintRow(row, { jobs: 0 }, 0, undefined, options)
+      paintRow(row, { jobs: 3 }, 1, undefined, options)
       const agents = row.querySelector('[data-dsc-chip="agents"]')
       const jobs = row.querySelector('[data-dsc-chip="jobs"]')
       expect(agents?.hasAttribute('data-dsc-idle')).toBe(false)
@@ -114,7 +114,7 @@ describe('paintRow', () => {
     withDoc((doc) => {
       const row = makeRow(doc, 'a')
       doc.body.append(row)
-      const kept = paintRow(row, undefined, 0, BASE)
+      const kept = paintRow(row, undefined, 0, undefined, BASE)
       expect(kept).toBe(false)
       expect(row.getAttribute(ROW_ATTR)).toBeNull()
       expect(row.children.length).toBe(4)
@@ -126,7 +126,7 @@ describe('paintRow', () => {
       const row = doc.createElement('div')
       row.setAttribute('data-row-key', 'session:a')
       doc.body.append(row)
-      expect(paintRow(row, { prompt: '你好', jobs: 0 }, 0, BASE)).toBe(false)
+      expect(paintRow(row, { prompt: '你好', jobs: 0 }, 0, undefined, BASE)).toBe(false)
       expect(row.getAttribute(ROW_ATTR)).toBeNull()
     })
   })
@@ -135,8 +135,8 @@ describe('paintRow', () => {
     withDoc((doc) => {
       const row = makeRow(doc, 'a')
       doc.body.append(row)
-      paintRow(row, { prompt: '第一句', jobs: 0 }, 0, BASE)
-      paintRow(row, { prompt: '第二句', jobs: 0 }, 0, BASE)
+      paintRow(row, { prompt: '第一句', jobs: 0 }, 0, undefined, BASE)
+      paintRow(row, { prompt: '第二句', jobs: 0 }, 0, undefined, BASE)
       expect(row.querySelectorAll('[data-dsc-role="prompt"]').length).toBe(1)
       expect(row.querySelector('[data-dsc-role="prompt"]')?.textContent).toBe('第二句')
     })
@@ -146,9 +146,9 @@ describe('paintRow', () => {
     withDoc((doc) => {
       const row = makeRow(doc, 'a')
       doc.body.append(row)
-      paintRow(row, { prompt: '你好', jobs: 2 }, 1, BASE)
+      paintRow(row, { prompt: '你好', jobs: 2 }, 1, undefined, BASE)
       const before = row.innerHTML
-      paintRow(row, { prompt: '你好', jobs: 2 }, 1, BASE)
+      paintRow(row, { prompt: '你好', jobs: 2 }, 1, undefined, BASE)
       expect(row.innerHTML).toBe(before)
     })
   })
@@ -157,7 +157,7 @@ describe('paintRow', () => {
     withDoc((doc) => {
       const row = makeRow(doc, 'a')
       doc.body.append(row)
-      paintRow(row, { prompt: '你好', jobs: 0 }, 0, BASE)
+      paintRow(row, { prompt: '你好', jobs: 0 }, 0, undefined, BASE)
       unpaintRow(row)
       expect(row.getAttribute(ROW_ATTR)).toBeNull()
       expect(row.children.length).toBe(4)
@@ -173,11 +173,94 @@ describe('paintTree', () => {
       const archived = makeRow(doc, 'archived')
       doc.body.append(live, archived)
       const facts = { live: { prompt: '你好', jobs: 0 }, archived: { prompt: '旧问题', jobs: 0 } }
-      expect(paintTree(doc, facts, new Map(), new Set(['archived']), BASE, true)).toBe(1)
+      expect(paintTree(doc, facts, new Map(), new Map(), new Set(['archived']), BASE, true)).toBe(1)
       expect(live.getAttribute(ROW_ATTR)).toBe('slim')
       expect(archived.getAttribute(ROW_ATTR)).toBeNull()
-      expect(paintTree(doc, facts, new Map(), new Set(['archived']), BASE, false)).toBe(0)
+      expect(paintTree(doc, facts, new Map(), new Map(), new Set(['archived']), BASE, false)).toBe(0)
       expect(live.getAttribute(ROW_ATTR)).toBeNull()
+    })
+  })
+})
+describe('the preset badge', () => {
+  it('leads the badge line with the preset id and the platform glyph', () => {
+    withDoc((doc) => {
+      const row = makeRow(doc, 'a')
+      doc.body.append(row)
+      paintRow(row, { prompt: '你好', jobs: 1 }, 2, 'ptc', BASE)
+      const chips = [...row.querySelectorAll('[data-dsc-chip]')]
+      expect(chips.length).toBe(3)
+      expect(chips[0]?.getAttribute('data-dsc-chip')).toBe('preset')
+      expect(chips[0]?.textContent).toBe('ptc')
+      expect(chips[1]?.getAttribute('data-dsc-chip')).toBe('agents')
+      expect(chips[2]?.getAttribute('data-dsc-chip')).toBe('jobs')
+    })
+  })
+
+  it('shows the id verbatim, so an unknown preset still names itself', () => {
+    withDoc((doc) => {
+      const row = makeRow(doc, 'a')
+      doc.body.append(row)
+      paintRow(row, { jobs: 0 }, 0, 'my-own-preset', BASE)
+      expect(row.querySelector('[data-dsc-chip="preset"]')?.textContent).toBe('my-own-preset')
+    })
+  })
+
+  it('stays on the line when the other badges are not sticky and nothing runs', () => {
+    withDoc((doc) => {
+      const row = makeRow(doc, 'a')
+      doc.body.append(row)
+      /* Only the preset: a preset has no count to fall to zero, so the sticky
+         switch has nothing to say about it. */
+      const kept = paintRow(row, { jobs: 0 }, 0, 'ptc', { ...BASE, stickyChips: false })
+      expect(kept).toBe(true)
+      expect(row.querySelectorAll('[data-dsc-chip]').length).toBe(1)
+      expect(row.querySelector('[data-dsc-chip="preset"]')?.hasAttribute('data-dsc-idle')).toBe(false)
+    })
+  })
+
+  it('carries the preset in the tooltip', () => {
+    withDoc((doc) => {
+      const row = makeRow(doc, 'a')
+      doc.body.append(row)
+      paintRow(row, { jobs: 0 }, 0, 'ptc', BASE)
+      expect(row.querySelector('[data-dsc-chip="preset"]')?.getAttribute('title')).toBe('智能体预设 ptc')
+    })
+  })
+
+  it('draws the filled node of the preset glyph, not only outlines', () => {
+    withDoc((doc) => {
+      const row = makeRow(doc, 'a')
+      doc.body.append(row)
+      paintRow(row, { jobs: 0 }, 0, 'ptc', BASE)
+      const paths = [...(row.querySelector('[data-dsc-chip="preset"]')?.querySelectorAll('path') ?? [])]
+      expect(paths.length).toBe(4)
+      /* One silhouette path, three stroked rings: a fill path that was stroked
+         would draw a hollow outline, and a stroked ring that was filled would
+         come out solid. Each path names its own rule. */
+      const filled = paths.filter(p => p.getAttribute('stroke') === 'none')
+      const stroked = paths.filter(p => p.getAttribute('stroke') === 'currentColor')
+      expect(filled.length).toBe(1)
+      expect(stroked.length).toBe(3)
+      expect(filled[0]?.getAttribute('fill')).toBe('currentColor')
+    })
+  })
+
+  it('disappears with the badge line when badges are switched off', () => {
+    withDoc((doc) => {
+      const row = makeRow(doc, 'a')
+      doc.body.append(row)
+      paintRow(row, { prompt: '你好', jobs: 0 }, 0, 'ptc', { ...BASE, showChips: false })
+      expect(row.querySelectorAll('[data-dsc-chip]').length).toBe(0)
+      expect(row.querySelector('[data-dsc-role="prompt"]')?.textContent).toBe('你好')
+    })
+  })
+
+  it('leaves the row official when a session has neither a preset nor anything else', () => {
+    withDoc((doc) => {
+      const row = makeRow(doc, 'a')
+      doc.body.append(row)
+      expect(paintRow(row, undefined, 0, undefined, BASE)).toBe(false)
+      expect(row.getAttribute(ROW_ATTR)).toBeNull()
     })
   })
 })

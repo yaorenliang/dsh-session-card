@@ -17,6 +17,7 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import { countRunningDescendants, type CountableSession } from '../core/counts.ts'
+import { collectPresets, type PresetSource } from '../core/preset.ts'
 import { fetchRows, type RowFacts } from './api.ts'
 import { loadFacts, saveFacts } from './facts-cache.ts'
 import { ROW_SELECTOR, STYLE_ID, sessionIdOf } from './anchors.ts'
@@ -49,7 +50,7 @@ interface ClientServices {
     readonly list: {
       getSnapshot(): {
         readonly ids: readonly string[]
-        readonly byId: Record<string, CountableSession | undefined>
+        readonly byId: Record<string, (CountableSession & PresetSource) | undefined>
       }
       subscribe(listener: () => void): () => void
     }
@@ -124,8 +125,16 @@ export function apply(ctx: Context): void {
     return ids
   }
 
-  /** Running descendant counts, straight from the list the sidebar renders. */
-  const runningDescendants = (): Map<string, number> => {
+  /**
+   * Running descendant counts and preset ids, from the one list the sidebar
+   * already renders.
+   *
+   * Both facts live in that snapshot: `parentId`/`running` for the counts, and
+   * the official `agentPreset` projection under `projectionValues` for the
+   * preset. Reading them together costs one pass, not two, and no I/O at all.
+   * @returns the counts and the presets by session id.
+   */
+  const listFacts = (): { running: Map<string, number>; presets: Map<string, string> } => {
     const snapshot = services.sessions.list.getSnapshot()
     const sessions: CountableSession[] = []
     for (const id of snapshot.ids) {
@@ -133,17 +142,22 @@ export function apply(ctx: Context): void {
       if (row === undefined) continue
       sessions.push({ id: row.id, parentId: row.parentId, running: row.running })
     }
-    return countRunningDescendants(sessions)
+    return {
+      running: countRunningDescendants(sessions),
+      presets: collectPresets(snapshot.byId, snapshot.ids),
+    }
   }
 
   /** Repaint every row from the current cache. */
   const repaint = (): void => {
     if (disposed) return
     const archived = new Set(services.workspaces.list.getSnapshot().archivedSessionIds)
+    const listed = listFacts()
     paintTree(
       document,
       facts,
-      runningDescendants(),
+      listed.running,
+      listed.presets,
       archived,
       {
         showPrompt: settings.showPrompt,

@@ -31,18 +31,19 @@ export interface PaintOptions {
   readonly showChips: boolean
   /** Whether the badge line stays even when nothing is running. */
   readonly stickyChips: boolean
-  /** Language for the badge text. */
+  /** Language for the card's own text. */
   readonly locale: CardLocale
   /** Whether this row may play the one expansion it plays on appearing. */
   readonly animate: boolean
 }
 
-/** One badge on the chip line: a platform glyph and the count. */
+/** One capsule on the chip line. */
 interface Badge {
-  readonly kind: 'agents' | 'jobs'
-  /** The number the badge reports. */
-  readonly count: number
-  /** The full sentence, used as the tooltip when the badge is too small for words. */
+  /** Which glyph it draws, and the attribute that colours it. */
+  readonly kind: 'preset' | 'agents' | 'jobs'
+  /** What the capsule says after the glyph: a preset id, or a count. */
+  readonly text: string
+  /** The full sentence, used as the tooltip when the capsule is too small for words. */
   readonly label: string
   /** Nothing is running: the badge reads quiet instead of alerting. */
   readonly idle: boolean
@@ -76,13 +77,16 @@ const SIGNATURE_JOIN = '\u0000'
 /** How long a row keeps the entrance attribute; the stylesheet animates for less. */
 const ENTER_MS = 320
 
+/** Every role this plugin owns inside a row. */
+const OWN_ROLES: ReadonlySet<string> = new Set(['prompt', 'chips'])
+
 /**
  * Play the card's one appearance gesture on a row.
  *
  * The card arrives a beat after the official row because its facts come from
  * the Host, and a row that simply grows is what reads as a hiccup. Marking the
- * row lets the stylesheet grow the two new lines from nothing instead, and the
- * mark is taken off once the gesture is over so later repaints stay still.
+ * row lets the stylesheet grow the new lines from nothing instead, and the mark
+ * is taken off once the gesture is over so later repaints stay still.
  * @param row - the row that just became a card.
  */
 function playEntrance(row: HTMLElement): void {
@@ -110,10 +114,10 @@ function playEntrance(row: HTMLElement): void {
 function classify(row: Element): RowShape {
   const official: HTMLElement[] = []
   for (const child of Array.from(row.children)) {
-    /* The card's own two lines are not part of the official shape, so a row
-       this plugin already painted still classifies as the row it was. */
+    /* The card's own lines are not part of the official shape, so a row this
+       plugin already painted still classifies as the row it was. */
     const role = child.getAttribute(ROLE_ATTR)
-    if (role === 'prompt' || role === 'chips') continue
+    if (role !== null && OWN_ROLES.has(role)) continue
     if (child.tagName !== 'SPAN') return {}
     official.push(child as HTMLElement)
   }
@@ -122,10 +126,10 @@ function classify(row: Element): RowShape {
 }
 
 /**
- * Build the card's own two lines, once per row.
+ * Build the card's own lines, once per row.
  * @param doc - the row's document.
  * @param lines - the previously built lines, when there are any.
- * @returns the two line elements.
+ * @returns the line elements.
  */
 function makeLines(doc: Document, lines: CardLines | undefined): CardLines {
   if (lines !== undefined) return lines
@@ -141,28 +145,37 @@ function makeLines(doc: Document, lines: CardLines | undefined): CardLines {
 /**
  * The badges a row's facts call for, in order.
  *
- * A sticky badge line keeps both capsules once the card is up, so a session's
- * row reads the same height whether it is working or idle — the thing that
- * moved was the number, not the row. A non-sticky line only shows work that
+ * The preset leads: it says what kind of agent this session is before the
+ * counts say what it is doing, and it is the only badge that never goes quiet.
+ * A sticky badge line keeps the two count capsules once the card is up, so a
+ * session's row reads the same height whether it is working or idle — the thing
+ * that moved was the number, not the row. A non-sticky line only shows work that
  * is actually running.
  * @param facts - the Host's facts for this session.
  * @param agents - running descendants, counted by the caller.
+ * @param preset - the preset id this session runs, when it has one.
  * @param locale - badge language.
- * @param sticky - whether an idle badge stays on the line.
+ * @param sticky - whether an idle count badge stays on the line.
  * @returns the badges to draw, in order.
  */
 function badgesOf(
   facts: RowFacts | undefined,
   agents: number,
+  preset: string | undefined,
   locale: CardLocale,
   sticky: boolean,
 ): readonly Badge[] {
   const jobs = facts?.jobs ?? 0
   const badges: Badge[] = []
+  /* Always on, whatever the sticky switch says: a preset has no count to fall
+     to zero, so there is no idle state to hide. */
+  if (preset !== undefined) {
+    badges.push({ kind: 'preset', text: preset, label: translate(locale, 'preset.hint', { t: preset }), idle: false })
+  }
   if (sticky || agents > 0) {
     badges.push({
       kind: 'agents',
-      count: agents,
+      text: String(agents),
       label: translate(locale, agents === 1 ? 'agents.one' : 'agents.other', { n: agents }),
       idle: agents === 0,
     })
@@ -170,7 +183,7 @@ function badgesOf(
   if (sticky || jobs > 0) {
     badges.push({
       kind: 'jobs',
-      count: jobs,
+      text: String(jobs),
       label: translate(locale, jobs === 1 ? 'jobs.one' : 'jobs.other', { n: jobs }),
       idle: jobs === 0,
     })
@@ -181,10 +194,10 @@ function badgesOf(
 /**
  * Replace a chip line's children with exactly these badges.
  *
- * A badge is the platform glyph and the number, nothing else: the row is too
- * narrow for a sentence, and the two icons are the ones the rest of the app
- * already uses for these two facts. The sentence survives as the tooltip, so
- * hovering still says what the number counts.
+ * A badge is a platform glyph and its value, nothing else: the row is too
+ * narrow for a sentence, and the icons are the ones the rest of the app already
+ * uses for these facts. The sentence survives as the tooltip, so hovering still
+ * says what the value means.
  * @param chips - the chip line to fill.
  * @param badges - the badges to draw, in order.
  */
@@ -197,7 +210,7 @@ function paintChips(chips: HTMLElement, badges: readonly Badge[]): void {
     if (badge.idle) span.setAttribute(IDLE_ATTR, '')
     span.setAttribute('title', badge.label)
     span.append(glyph(doc, badge.kind, 12))
-    span.append(doc.createTextNode(String(badge.count)))
+    span.append(doc.createTextNode(badge.text))
     chips.append(span)
   }
   if (chips.childElementCount === 0) chips.setAttribute(EMPTY_ATTR, '')
@@ -210,6 +223,7 @@ function paintChips(chips: HTMLElement, badges: readonly Badge[]): void {
  * @param row - a session row element.
  * @param facts - the Host's facts for this session, when there are any.
  * @param agents - running descendants, already counted by the caller.
+ * @param preset - the preset id this session runs, when it has one.
  * @param options - whether each line is shown, and in which language.
  * @returns whether the card layout is in effect on this row.
  */
@@ -217,6 +231,7 @@ export function paintRow(
   row: Element,
   facts: RowFacts | undefined,
   agents: number,
+  preset: string | undefined,
   options: PaintOptions,
 ): boolean {
   const shape = classify(row)
@@ -227,7 +242,7 @@ export function paintRow(
 
   const prompt = options.showPrompt ? (facts?.prompt ?? '') : ''
   const badges = options.showChips
-    ? badgesOf(facts, agents, options.locale, options.stickyChips)
+    ? badgesOf(facts, agents, preset, options.locale, options.stickyChips)
     : []
 
   /* Nothing to say about this row: leave it exactly as the official sidebar
@@ -237,8 +252,10 @@ export function paintRow(
     return false
   }
 
-  const signature = [prompt, ...badges.map(badge => badge.kind + ':' + String(badge.count) + ':' + String(badge.idle))]
-    .join(SIGNATURE_JOIN)
+  const signature = [
+    prompt,
+    ...badges.map(badge => badge.kind + ':' + badge.text + ':' + String(badge.idle)),
+  ].join(SIGNATURE_JOIN)
 
   const previous = painted.get(row)
   const attached = previous !== undefined
@@ -262,7 +279,7 @@ export function paintRow(
      line elements, and stacking them is exactly the bug this prevents. */
   for (const stray of Array.from(row.children)) {
     const role = stray.getAttribute(ROLE_ATTR)
-    if (role !== 'prompt' && role !== 'chips') continue
+    if (role === null || !OWN_ROLES.has(role)) continue
     if (stray === previous?.lines.prompt || stray === previous?.lines.chips) continue
     stray.remove()
   }
@@ -282,6 +299,7 @@ export function paintRow(
   }
 
   paintChips(lines.chips, badges)
+
   /* Whatever the badge line carries decides the height, not the question: a
      chip line that is there keeps the card at its full size from the first
      paint, so the question can arrive from the Host a moment later without
@@ -320,6 +338,7 @@ export function unpaintRow(row: Element): void {
  * @param root - the container to scan (a sidebar column, or the document).
  * @param facts - the Host's facts by session id.
  * @param runningDescendants - running descendant count by session id.
+ * @param presets - preset id by session id.
  * @param archived - session ids the sidebar shows as archived.
  * @param options - painting options.
  * @param enabled - when false every touched row is restored instead.
@@ -329,6 +348,7 @@ export function paintTree(
   root: ParentNode,
   facts: Record<string, RowFacts>,
   runningDescendants: ReadonlyMap<string, number>,
+  presets: ReadonlyMap<string, string>,
   archived: ReadonlySet<string>,
   options: PaintOptions,
   enabled: boolean,
@@ -343,7 +363,7 @@ export function paintTree(
     /* An archived row means the person put this session away: it keeps the
        official one-line form, quiet and out of the way. */
     const shown = enabled && !archived.has(id)
-      && paintRow(row, facts[id], runningDescendants.get(id) ?? 0, options)
+      && paintRow(row, facts[id], runningDescendants.get(id) ?? 0, presets.get(id), options)
     if (shown) count += 1
     else unpaintRow(row)
   }

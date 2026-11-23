@@ -2,9 +2,9 @@
  * The browser's view of the Host route.
  *
  * One request describes every visible row: the Host answers with the newest
- * human question and the running job count per session. The route sits behind
- * Connection's authentication fence, so a plain same-origin fetch carries the
- * session's credentials.
+ * human question and the running job count. The route sits behind Connection's
+ * authentication fence, so a plain same-origin fetch carries the session's
+ * credentials.
  */
 
 /** What the Host knows about one row that the browser does not. */

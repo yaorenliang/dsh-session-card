@@ -86,9 +86,9 @@
 
 /* The badge line, and the badges themselves.
 
-   A badge is the platform glyph and the number — the same two icons DSH puts
-   in front of these facts everywhere else — so it fits a narrow sidebar row
-   and still says which count it is. The sentence lives in the tooltip. */
+   A badge is the platform glyph and its value — the same icons DSH puts in
+   front of these facts everywhere else — so it fits a narrow sidebar row and
+   still says what the value is. The sentence lives in the tooltip. */
 [data-dsc-role="chips"] {
   display: none;
   align-items: center;
@@ -127,6 +127,17 @@
   display: block;
   flex: none;
   opacity: 0.85;
+}
+
+/* The preset badge names which agent this session runs. It is the one badge
+   that carries a word rather than a count, so it keeps the platform's own
+   preset colour and stays legible at 11px: the id is lowercase ASCII, which is
+   narrower than any Chinese label and holds up without tracking. */
+[data-dsc-role="chips"] > span[data-dsc-chip="preset"] {
+  background: var(--dsw-alias-card-fill);
+  color: var(--dsw-alias-label-secondary);
+  font-family: var(--dsw-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  letter-spacing: 0.01em;
 }
 
 [data-dsc-role="chips"] > span[data-dsc-chip="agents"] {

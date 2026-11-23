@@ -1,0 +1,6 @@
+# dsh-session-card bundle patch: one Loader row. The Node half serves the
+# "last thing I asked" column over an authenticated /api route; the browser half
+# paints it into the sidebar rows through dsh.client.
+- insert:
+    - id: dsh-session-card
+      name: '@yaorenliang/dsh-session-card'

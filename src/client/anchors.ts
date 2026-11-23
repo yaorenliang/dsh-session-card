@@ -1,0 +1,38 @@
+/**
+ * The one place the injected DOM is named.
+ *
+ * The sidebar's own class names carry a build hash, so this plugin addresses
+ * rows by the stable `data-row-key` attribute and marks its own additions with
+ * private attributes. Keeping the names in one module means the stylesheet, the
+ * painter, and the tests cannot drift apart.
+ */
+
+/** Set on a row the card layout owns. */
+export const ROW_ATTR = 'data-dsc-card'
+
+/** Set on an injected line, naming the role it plays. */
+export const ROLE_ATTR = 'data-dsc-role'
+
+/** Set on a line that currently has nothing to show. */
+export const EMPTY_ATTR = 'data-dsc-empty'
+
+/** Set on a chip, naming what it counts. */
+export const CHIP_ATTR = 'data-dsc-chip'
+
+/** Every session row the official sidebar renders, archived ones included. */
+export const ROW_SELECTOR = '[data-row-key^="session:"]'
+
+/** The id of the one style element this plugin owns. */
+export const STYLE_ID = 'dsh-session-card-styles'
+
+/**
+ * Read the session id out of a row's `data-row-key`.
+ * @param row - a session row element.
+ * @returns the session id, or undefined when the attribute is not a session key.
+ */
+export function sessionIdOf(row: Element): string | undefined {
+  const key = row.getAttribute('data-row-key')
+  if (key === null || !key.startsWith('session:')) return undefined
+  const id = key.slice('session:'.length)
+  return id === '' ? undefined : id
+}

@@ -1,0 +1,124 @@
+/* Card layout for sidebar session rows.
+
+   The official row is a single flex line whose class names carry a build hash,
+   so nothing here may select .sessionRow. Rows are addressed by the stable
+   data-row-key attribute the sidebar already renders, and the layout runs on
+   the data-dsc-* attributes this plugin sets on purpose-built anchors. If the
+   official structure stops matching, the decoration pass refuses to tag the
+   row and it keeps its official one-line look.
+
+   Only design tokens are used, so the card follows light, dark, and any theme
+   the platform ships. */
+
+[data-dsc-card] {
+  display: grid;
+  height: auto;
+  min-height: 54px;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "slot title rest"
+    "slot prompt rest"
+    "slot chips rest";
+  align-items: center;
+  /* Rows are packed, never stretched: an absent third line must collapse to
+     zero instead of absorbing leftover min-height. */
+  align-content: center;
+  gap: 0 6px;
+  padding-block: 0;
+}
+
+/* 54px is the card with both lines populated (20 title + 16 question + 18
+   chip row); 48px is the card that only carries the question and centres it in
+   the same rhythm the official 32px row uses. */
+[data-dsc-card="slim"] {
+  min-height: 48px;
+}
+
+/* The official icon keeps its place on every line. */
+[data-dsc-card] > [data-dsc-role="slot"] {
+  grid-area: slot;
+  align-self: start;
+  margin-top: 2px;
+}
+
+/* The official title keeps the cell it always had. */
+[data-dsc-card] > [data-dsc-role="title"] {
+  grid-area: title;
+  min-width: 0;
+  margin-inline: 0;
+}
+
+/* Time, trailing slot, and the hover actions share the right column. */
+[data-dsc-card] > [data-dsc-role="rest"],
+[data-dsc-card] > [data-dsc-role="actions"] {
+  grid-area: rest;
+  align-self: start;
+  margin-top: 2px;
+}
+
+[data-dsc-card] > [data-dsc-role="prompt"] {
+  grid-area: prompt;
+}
+
+[data-dsc-card] > [data-dsc-role="chips"] {
+  grid-area: chips;
+}
+
+/* The question line: quiet, single line, cut exactly like the official title so
+   the two read as one paragraph. */
+[data-dsc-role="prompt"] {
+  display: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+[data-dsc-role="prompt"]:not([data-dsc-empty]) {
+  display: block;
+}
+
+/* Hover keeps the question visible: the official row hides its resting cell to
+   make room for the actions, and the question is the line the card exists for. */
+[data-dsc-card]:hover > [data-dsc-role="prompt"] {
+  color: var(--dsw-alias-label-secondary);
+}
+
+/* The chip line, and the chips themselves: small tinted capsules, no border. */
+[data-dsc-role="chips"] {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+[data-dsc-role="chips"]:not([data-dsc-empty]) {
+  display: flex;
+}
+
+[data-dsc-role="chips"] > span {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: var(--dsw-radius-sm);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+[data-dsc-role="chips"] > span[data-dsc-chip="agents"] {
+  background: var(--dsw-alias-state-warn-tertiary);
+  color: var(--dsw-alias-state-warn-label);
+}
+
+[data-dsc-role="chips"] > span[data-dsc-chip="jobs"] {
+  background: var(--dsw-alias-card-fill);
+  color: var(--dsw-alias-label-secondary);
+}

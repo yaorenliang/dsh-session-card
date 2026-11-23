@@ -1,10 +1,14 @@
 # dsh-session-card
 
-![dsh-session-card](docs/showcase.png)
-
 侧边栏里每个会话一行，标题下面再加两行：**你最后问的那句话**，以及**这个会话用的哪个 agent 预设**、正在跑的子智能体和后台任务。
 
 DSH 官方的会话行只有一行（标题 + 时间 + 图标），会话多了以后分不清哪个是哪个。这个插件在你最近问过的问题上补一行摘要，让侧边栏自己说明它是谁。
+
+## Screenshots
+
+![dsh-session-card showcase preview: the three-line session card in the sidebar, with the title, the last prompt and the agent preset](docs/screenshot-card.png)
+
+侧边栏在真实界面里的样子，图里四条注解说明每一行是什么。
 
 ## 长什么样
 
@@ -80,8 +84,8 @@ src/
   host/       唯一的只读路由 + 结构化 Host 契约
   client/     行绘制、设置行、轮询与样式注入
 docs/
-  showcase.html  介绍页（截图就是从它来的，可直接在浏览器打开）
-  showcase.png   README 顶部那张图
+  showcase.html       介绍页（截图就是从它来的，可直接在浏览器打开）
+  screenshot-card.png README 里那张图
 ```
 
 ## 边界

@@ -11,8 +11,8 @@ import type { CardSettings } from './settings.tsx'
 /** The browser storage key. */
 const STORAGE_KEY = 'dsh-session-card:settings'
 
-/** Everything on: the card's whole point is showing more than the title. */
-const DEFAULTS: CardSettings = { enabled: true, showPrompt: true, showChips: true }
+/** Everything on, badge line steady: switching the card on keeps its height fixed. */
+const DEFAULTS: CardSettings = { enabled: true, showPrompt: true, showChips: true, stickyChips: true }
 
 /**
  * Read the saved preferences.
@@ -29,6 +29,7 @@ export function loadSettings(storage: Storage | undefined): CardSettings {
       enabled: typeof parsed.enabled === 'boolean' ? parsed.enabled : DEFAULTS.enabled,
       showPrompt: typeof parsed.showPrompt === 'boolean' ? parsed.showPrompt : DEFAULTS.showPrompt,
       showChips: typeof parsed.showChips === 'boolean' ? parsed.showChips : DEFAULTS.showChips,
+      stickyChips: typeof parsed.stickyChips === 'boolean' ? parsed.stickyChips : DEFAULTS.stickyChips,
     }
   } catch {
     return DEFAULTS

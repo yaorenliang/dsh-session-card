@@ -1,5 +1,5 @@
 /**
- * The settings row stylesheet, as a string the browser bundle can install.
+ * The settings stylesheet, as a string the browser bundle can install.
  *
  * Generated from settings.css — edit that file, not this one.
  */

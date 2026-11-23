@@ -18,6 +18,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { countRunningDescendants, type CountableSession } from '../core/counts.ts'
 import { fetchRows, type RowFacts } from './api.ts'
+import { loadFacts, saveFacts } from './facts-cache.ts'
 import { ROW_SELECTOR, STYLE_ID, sessionIdOf } from './anchors.ts'
 import { resolveLocale, translate, type CardLocale, type MessageKey } from './i18n.ts'
 import { paintTree } from './painter.ts'
@@ -32,7 +33,10 @@ export const inject = ['slots', 'sessions', 'workspaces']
 /** How often the Host is asked while the sidebar is visible. */
 const POLL_INTERVAL_MS = 2500
 
-/** Debounce for DOM mutations: React re-renders arrive in bursts. */
+/** How long after mount rows are considered part of the opening paint. */
+const OPENING_MS = 700
+
+/** Debounce for state subscriptions: React re-renders arrive in bursts. */
 const MUTATION_DEBOUNCE_MS = 80
 
 /** The client surface this module consumes, declared structurally. */
@@ -89,7 +93,14 @@ export function apply(ctx: Context): void {
   const services = ctx as unknown as ClientServices
   const storage = browserStorage()
   let settings: CardSettings = loadSettings(storage)
-  let facts: Record<string, RowFacts> = {}
+  /* Start from what the Host said last time, so a refresh draws the card with
+     the sidebar's first paint instead of after the first network reply. */
+  let facts: Record<string, RowFacts> = loadFacts(storage)
+  /* Rows painted while the page is still opening are drawn before the frame is
+     presented and must not animate; rows that appear later do. A moment is a
+     safer boundary than a frame, because the sidebar mounts on its own
+     schedule after this module is applied. */
+  const bootedAt = performance.now()
   let poller: number | undefined
   let pollAbort: AbortController | undefined
   let mutationTimer: number | undefined
@@ -99,6 +110,9 @@ export function apply(ctx: Context): void {
     () => installStyles(document, STYLE_ID, STYLESHEET + '\n' + SETTINGS_STYLESHEET),
     'dsh-session-card: stylesheet',
   )
+
+  /** Whether the page is still in its opening moments. */
+  const opening = (): boolean => performance.now() - bootedAt < OPENING_MS
 
   /** Every session row currently on screen. */
   const visibleIds = (): readonly string[] => {
@@ -131,7 +145,13 @@ export function apply(ctx: Context): void {
       facts,
       runningDescendants(),
       archived,
-      { showPrompt: settings.showPrompt, showChips: settings.showChips, locale: currentLocale() },
+      {
+        showPrompt: settings.showPrompt,
+        showChips: settings.showChips,
+        stickyChips: settings.stickyChips,
+        locale: currentLocale(),
+        animate: !opening(),
+      },
       settings.enabled,
     )
   }
@@ -147,6 +167,7 @@ export function apply(ctx: Context): void {
     const incoming = await fetchRows(ids, controller.signal)
     if (disposed || controller.signal.aborted) return
     facts = incoming
+    saveFacts(storage, facts)
     repaint()
   }
 
@@ -159,12 +180,54 @@ export function apply(ctx: Context): void {
     }, MUTATION_DEBOUNCE_MS)
   }
 
+  /**
+   * Whether a mutation batch touched a session row.
+   *
+   * Only those batches need the row painted before the next frame; everything
+   * else (typing, scrolling, streaming chat) can wait for the debounce without
+   * anything on screen changing.
+   * @param records - the batch the observer delivered.
+   * @returns true when a row appeared or changed.
+   */
+  const touchesRow = (records: readonly MutationRecord[]): boolean => {
+    for (const record of records) {
+      if (record.target instanceof Element && record.target.closest(ROW_SELECTOR) !== null) {
+        return true
+      }
+      for (const node of Array.from(record.addedNodes)) {
+        if (!(node instanceof Element)) continue
+        if (node.matches(ROW_SELECTOR)) return true
+        if (node.querySelector(ROW_SELECTOR) !== null) return true
+        const parent = node.parentElement
+        if (parent !== null && parent.closest(ROW_SELECTOR) !== null) return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * Paint rows as soon as the sidebar renders them.
+   *
+   * An observer callback runs as a microtask, still before the frame is
+   * presented, so painting here is what keeps a fresh row from showing its
+   * official one-line form for a moment first. Waiting for the debounce is
+   * exactly the flicker this replaced.
+   * @param records - the batch the observer delivered.
+   */
+  const onMutations = (records: MutationRecord[]): void => {
+    if (touchesRow(records)) repaint()
+    else scheduleRepaint()
+  }
+
   services.effect(() => {
-    const observer = new MutationObserver(scheduleRepaint)
+    const observer = new MutationObserver(onMutations)
     observer.observe(document.body, { childList: true, subtree: true })
     const unsubscribeSessions = services.sessions.list.subscribe(scheduleRepaint)
     const unsubscribeWorkspaces = services.workspaces.list.subscribe(scheduleRepaint)
     poller = window.setInterval(() => { void refresh() }, POLL_INTERVAL_MS)
+    /* Rows the sidebar already mounted get their card in this frame, from the
+       facts kept locally, rather than one network round trip later. */
+    repaint()
     void refresh()
     return () => {
       disposed = true

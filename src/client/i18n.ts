@@ -1,9 +1,11 @@
 /**
- * The card's two line labels.
+ * The card's two badge sentences.
  *
- * The wording follows the official Chinese strings for the same two facts
- * ("N 个子智能体运行中", "N 个后台任务") so the card never invents terminology the
- * rest of the app does not use. English is the fallback locale.
+ * The badge itself shows only the platform glyph and the number — a sidebar
+ * row is around 200px wide and a sentence would not fit — so these strings
+ * are the tooltip that explains what the number counts, and they keep the
+ * wording the official sidebar already uses for the same two facts.
+ * English is the fallback locale.
  */
 
 /** One supported language. */
@@ -19,6 +21,7 @@ const ZH = {
   'settings.enable': '启用卡片',
   'settings.showPrompt': '显示提问行',
   'settings.showChips': '显示运行徽标',
+  'settings.stickyChips': '徽标常驻（没有运行时也占位）',
 } as const
 
 export type MessageKey = keyof typeof ZH
@@ -33,6 +36,7 @@ const EN: Record<MessageKey, string> = {
   'settings.enable': 'Enable cards',
   'settings.showPrompt': 'Show the question line',
   'settings.showChips': 'Show running badges',
+  'settings.stickyChips': 'Keep badges while idle',
 }
 
 const DICTS: Record<CardLocale, Record<MessageKey, string>> = { zh: ZH, en: EN }

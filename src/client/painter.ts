@@ -17,9 +17,10 @@
  */
 
 import {
-  CHIP_ATTR, EMPTY_ATTR, ROLE_ATTR, ROW_ATTR, ROW_SELECTOR, sessionIdOf,
+  CHIP_ATTR, EMPTY_ATTR, ENTER_ATTR, IDLE_ATTR, ROLE_ATTR, ROW_ATTR, ROW_SELECTOR, sessionIdOf,
 } from './anchors.ts'
 import type { RowFacts } from './api.ts'
+import { glyph } from './icons.ts'
 import { translate, type CardLocale } from './i18n.ts'
 
 /** What the painter needs to know about the view it is painting into. */
@@ -28,14 +29,23 @@ export interface PaintOptions {
   readonly showPrompt: boolean
   /** Whether the running badges are shown. */
   readonly showChips: boolean
+  /** Whether the badge line stays even when nothing is running. */
+  readonly stickyChips: boolean
   /** Language for the badge text. */
   readonly locale: CardLocale
+  /** Whether this row may play the one expansion it plays on appearing. */
+  readonly animate: boolean
 }
 
-/** One badge on the chip line. */
+/** One badge on the chip line: a platform glyph and the count. */
 interface Badge {
   readonly kind: 'agents' | 'jobs'
-  readonly text: string
+  /** The number the badge reports. */
+  readonly count: number
+  /** The full sentence, used as the tooltip when the badge is too small for words. */
+  readonly label: string
+  /** Nothing is running: the badge reads quiet instead of alerting. */
+  readonly idle: boolean
 }
 
 /** The two lines the card owns, reused across passes. */
@@ -62,6 +72,30 @@ interface RowShape {
 
 /** Separator inside a row content signature; never appears in a rendered line. */
 const SIGNATURE_JOIN = '\u0000'
+
+/** How long a row keeps the entrance attribute; the stylesheet animates for less. */
+const ENTER_MS = 320
+
+/**
+ * Play the card's one appearance gesture on a row.
+ *
+ * The card arrives a beat after the official row because its facts come from
+ * the Host, and a row that simply grows is what reads as a hiccup. Marking the
+ * row lets the stylesheet grow the two new lines from nothing instead, and the
+ * mark is taken off once the gesture is over so later repaints stay still.
+ * @param row - the row that just became a card.
+ */
+function playEntrance(row: HTMLElement): void {
+  row.setAttribute(ENTER_ATTR, '')
+  const doc = row.ownerDocument
+  const view = doc.defaultView
+  const done = (): void => { row.removeAttribute(ENTER_ATTR) }
+  if (view === null || typeof view.requestAnimationFrame !== 'function') {
+    done()
+    return
+  }
+  view.setTimeout(done, ENTER_MS)
+}
 
 /**
  * Classify the row's direct children by position.
@@ -104,33 +138,66 @@ function makeLines(doc: Document, lines: CardLines | undefined): CardLines {
   return { prompt, chips }
 }
 
-/** The badges a row's facts call for, in order. */
-function badgesOf(facts: RowFacts | undefined, agents: number, locale: CardLocale): readonly Badge[] {
+/**
+ * The badges a row's facts call for, in order.
+ *
+ * A sticky badge line keeps both capsules once the card is up, so a session's
+ * row reads the same height whether it is working or idle — the thing that
+ * moved was the number, not the row. A non-sticky line only shows work that
+ * is actually running.
+ * @param facts - the Host's facts for this session.
+ * @param agents - running descendants, counted by the caller.
+ * @param locale - badge language.
+ * @param sticky - whether an idle badge stays on the line.
+ * @returns the badges to draw, in order.
+ */
+function badgesOf(
+  facts: RowFacts | undefined,
+  agents: number,
+  locale: CardLocale,
+  sticky: boolean,
+): readonly Badge[] {
+  const jobs = facts?.jobs ?? 0
   const badges: Badge[] = []
-  if (agents > 0) {
+  if (sticky || agents > 0) {
     badges.push({
       kind: 'agents',
-      text: translate(locale, agents === 1 ? 'agents.one' : 'agents.other', { n: agents }),
+      count: agents,
+      label: translate(locale, agents === 1 ? 'agents.one' : 'agents.other', { n: agents }),
+      idle: agents === 0,
     })
   }
-  const jobs = facts?.jobs ?? 0
-  if (jobs > 0) {
+  if (sticky || jobs > 0) {
     badges.push({
       kind: 'jobs',
-      text: translate(locale, jobs === 1 ? 'jobs.one' : 'jobs.other', { n: jobs }),
+      count: jobs,
+      label: translate(locale, jobs === 1 ? 'jobs.one' : 'jobs.other', { n: jobs }),
+      idle: jobs === 0,
     })
   }
   return badges
 }
 
-/** Replace a chip line's children with exactly these badges. */
+/**
+ * Replace a chip line's children with exactly these badges.
+ *
+ * A badge is the platform glyph and the number, nothing else: the row is too
+ * narrow for a sentence, and the two icons are the ones the rest of the app
+ * already uses for these two facts. The sentence survives as the tooltip, so
+ * hovering still says what the number counts.
+ * @param chips - the chip line to fill.
+ * @param badges - the badges to draw, in order.
+ */
 function paintChips(chips: HTMLElement, badges: readonly Badge[]): void {
   const doc = chips.ownerDocument
   chips.replaceChildren()
   for (const badge of badges) {
     const span = doc.createElement('span')
     span.setAttribute(CHIP_ATTR, badge.kind)
-    span.textContent = badge.text
+    if (badge.idle) span.setAttribute(IDLE_ATTR, '')
+    span.setAttribute('title', badge.label)
+    span.append(glyph(doc, badge.kind, 12))
+    span.append(doc.createTextNode(String(badge.count)))
     chips.append(span)
   }
   if (chips.childElementCount === 0) chips.setAttribute(EMPTY_ATTR, '')
@@ -159,7 +226,9 @@ export function paintRow(
   }
 
   const prompt = options.showPrompt ? (facts?.prompt ?? '') : ''
-  const badges = options.showChips ? badgesOf(facts, agents, options.locale) : []
+  const badges = options.showChips
+    ? badgesOf(facts, agents, options.locale, options.stickyChips)
+    : []
 
   /* Nothing to say about this row: leave it exactly as the official sidebar
      drew it rather than reserving card height for an empty line. */
@@ -168,7 +237,8 @@ export function paintRow(
     return false
   }
 
-  const signature = [prompt, ...badges.map(badge => badge.kind + ':' + badge.text)].join(SIGNATURE_JOIN)
+  const signature = [prompt, ...badges.map(badge => badge.kind + ':' + String(badge.count) + ':' + String(badge.idle))]
+    .join(SIGNATURE_JOIN)
 
   const previous = painted.get(row)
   const attached = previous !== undefined
@@ -179,7 +249,8 @@ export function paintRow(
     return true
   }
 
-  if (row.getAttribute(ROW_ATTR) === null) {
+  const appearing = row.getAttribute(ROW_ATTR) === null
+  if (appearing) {
     shape.slot.setAttribute(ROLE_ATTR, 'slot')
     shape.title.setAttribute(ROLE_ATTR, 'title')
     shape.rest?.setAttribute(ROLE_ATTR, 'rest')
@@ -211,11 +282,16 @@ export function paintRow(
   }
 
   paintChips(lines.chips, badges)
-  /* The chip row collapses when it carries nothing, and the card is shorter
-     for it: a row with one line of text should not reserve space for badges
-     that will never arrive. */
-  const twoLines = prompt !== '' && badges.length > 0
-  row.setAttribute(ROW_ATTR, twoLines ? 'full' : 'slim')
+  /* Whatever the badge line carries decides the height, not the question: a
+     chip line that is there keeps the card at its full size from the first
+     paint, so the question can arrive from the Host a moment later without
+     the row growing under the reader. Without a chip line, a card that only
+     has the question stays short. */
+  const full = badges.length > 0
+  row.setAttribute(ROW_ATTR, full ? 'full' : 'slim')
+  /* A row that only just became a card grows into the space it needs instead
+     of snapping into it; a row that was already a card just repaints. */
+  if (appearing && options.animate) playEntrance(row as HTMLElement)
   painted.set(row, { lines, signature })
   return true
 }

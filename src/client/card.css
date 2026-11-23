@@ -13,32 +13,28 @@
 [data-dsc-card] {
   display: grid;
   height: auto;
-  min-height: 54px;
+  /* The card is exactly as tall as its content: a 20px title line, a 16px
+     question line, a 16px badge line, 2px between each, and 3px of air top
+     and bottom so the block never presses on the rows around it. Every
+     height is derived, never declared, so an absent line simply costs nothing
+     and nothing has to be kept in sync. */
   grid-template-columns: 16px minmax(0, 1fr) auto;
+  grid-template-rows: 20px auto auto;
   grid-template-areas:
     "slot title rest"
     "slot prompt rest"
     "slot chips rest";
   align-items: center;
-  /* Rows are packed, never stretched: an absent third line must collapse to
-     zero instead of absorbing leftover min-height. */
-  align-content: center;
+  align-content: start;
   gap: 0 6px;
-  padding-block: 0;
-}
-
-/* 54px is the card with both lines populated (20 title + 16 question + 18
-   chip row); 48px is the card that only carries the question and centres it in
-   the same rhythm the official 32px row uses. */
-[data-dsc-card="slim"] {
-  min-height: 48px;
+  padding-block: 3px;
 }
 
 /* The official icon keeps its place on every line. */
 [data-dsc-card] > [data-dsc-role="slot"] {
   grid-area: slot;
   align-self: start;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 /* The official title keeps the cell it always had. */
@@ -53,7 +49,7 @@
 [data-dsc-card] > [data-dsc-role="actions"] {
   grid-area: rest;
   align-self: start;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 [data-dsc-card] > [data-dsc-role="prompt"] {
@@ -65,13 +61,14 @@
 }
 
 /* The question line: quiet, single line, cut exactly like the official title so
-   the two read as one paragraph. */
+   the two read as one paragraph, with a little air above it. */
 [data-dsc-role="prompt"] {
   display: none;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin-top: 2px;
   font-size: 12px;
   line-height: 16px;
   color: var(--dsw-alias-label-tertiary);
@@ -87,7 +84,11 @@
   color: var(--dsw-alias-label-secondary);
 }
 
-/* The chip line, and the chips themselves: small tinted capsules, no border. */
+/* The badge line, and the badges themselves.
+
+   A badge is the platform glyph and the number — the same two icons DSH puts
+   in front of these facts everywhere else — so it fits a narrow sidebar row
+   and still says which count it is. The sentence lives in the tooltip. */
 [data-dsc-role="chips"] {
   display: none;
   align-items: center;
@@ -101,16 +102,31 @@
   display: flex;
 }
 
+/* An empty line must not leave its margin behind: a card without badges is
+   the title, the question, and nothing else. */
+[data-dsc-role="chips"][data-dsc-empty] {
+  margin-top: 0;
+}
+
 [data-dsc-role="chips"] > span {
   display: inline-flex;
   align-items: center;
   flex: none;
+  gap: 3px;
   height: 16px;
   padding: 0 5px;
   border-radius: var(--dsw-radius-sm);
   font-size: 11px;
   line-height: 16px;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* The glyph tints itself with the badge colour and never carries its own box. */
+[data-dsc-role="chips"] > span > svg {
+  display: block;
+  flex: none;
+  opacity: 0.85;
 }
 
 [data-dsc-role="chips"] > span[data-dsc-chip="agents"] {
@@ -121,4 +137,37 @@
 [data-dsc-role="chips"] > span[data-dsc-chip="jobs"] {
   background: var(--dsw-alias-card-fill);
   color: var(--dsw-alias-label-secondary);
+}
+
+/* A badge for work that is not happening keeps its place and drops its
+   colour: the line stays put, so the row never changes height between
+   working and idle, and a quiet row does not look like it is alerting. */
+[data-dsc-role="chips"] > span[data-dsc-idle] {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-caption);
+}
+
+/* The one gesture the card plays as it appears.
+
+   The card is painted in the same frame React mounts the row, so the row
+   never shows its official one-line height at all. What is left to soften is
+   the two new lines: they open downward inside the space the card already
+   holds, so nothing below moves. The mark that enables the animation is taken
+   off afterwards, so a repaint never re-runs it. */
+[data-dsc-card][data-dsc-enter] > [data-dsc-role="prompt"],
+[data-dsc-card][data-dsc-enter] > [data-dsc-role="chips"] {
+  animation: dsc-line-open 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  overflow: hidden;
+}
+
+@keyframes dsc-line-open {
+  from { max-height: 0; opacity: 0; }
+  to { max-height: 22px; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-dsc-card][data-dsc-enter] > [data-dsc-role="prompt"],
+  [data-dsc-card][data-dsc-enter] > [data-dsc-role="chips"] {
+    animation: none;
+  }
 }

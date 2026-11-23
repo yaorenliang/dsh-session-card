@@ -1,5 +1,5 @@
 /**
- * The General settings row: three switches that describe the card.
+ * The General settings row: four switches that describe the card.
  *
  * The General section supplies no props at all by design — a row draws its own
  * label and writes through its own injected face — so nothing here depends on
@@ -18,6 +18,8 @@ export interface CardSettings {
   showPrompt: boolean
   /** Whether the running badges are shown. */
   showChips: boolean
+  /** Whether the badge line stays once the card is up, even with nothing running. */
+  stickyChips: boolean
 }
 
 /** The row's injected face. */
@@ -26,7 +28,7 @@ export interface SettingsRowInjected {
   readonly initial: CardSettings
   /** Persist one changed value. */
   readonly update: (patch: Partial<CardSettings>) => void
-  /** Localized text for the four labels. */
+  /** Localized text for the labels. */
   readonly t: (key: SettingsTextKey) => string
 }
 
@@ -37,6 +39,7 @@ export type SettingsTextKey =
   | 'settings.enable'
   | 'settings.showPrompt'
   | 'settings.showChips'
+  | 'settings.stickyChips'
 
 /**
  * Render the card settings row.
@@ -54,6 +57,7 @@ export function CardSettingsRow({ initial, update, t }: SettingsRowInjected) {
     { key: 'enabled', label: t('settings.enable'), off: false },
     { key: 'showPrompt', label: t('settings.showPrompt'), off: !settings.enabled },
     { key: 'showChips', label: t('settings.showChips'), off: !settings.enabled },
+    { key: 'stickyChips', label: t('settings.stickyChips'), off: !settings.enabled || !settings.showChips },
   ]
   return (
     <div className="dsc-settings-group">

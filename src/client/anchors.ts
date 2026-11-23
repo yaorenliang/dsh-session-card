@@ -19,6 +19,12 @@ export const EMPTY_ATTR = 'data-dsc-empty'
 /** Set on a chip, naming what it counts. */
 export const CHIP_ATTR = 'data-dsc-chip'
 
+/** Set on a chip reporting nothing running, so it reads quiet. */
+export const IDLE_ATTR = 'data-dsc-idle'
+
+/** Set for the one expansion a row plays when the card first appears. */
+export const ENTER_ATTR = 'data-dsc-enter'
+
 /** Every session row the official sidebar renders, archived ones included. */
 export const ROW_SELECTOR = '[data-row-key^="session:"]'
 

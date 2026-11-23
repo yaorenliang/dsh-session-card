@@ -1,5 +1,7 @@
 # dsh-session-card
 
+![dsh-session-card](docs/showcase.png)
+
 侧边栏里每个会话一行，标题下面再加两行：**你最后问的那句话**，以及**这个会话用的哪个 agent 预设**、正在跑的子智能体和后台任务。
 
 DSH 官方的会话行只有一行（标题 + 时间 + 图标），会话多了以后分不清哪个是哪个。这个插件在你最近问过的问题上补一行摘要，让侧边栏自己说明它是谁。
@@ -47,7 +49,15 @@ Host 只开一个只读路由 `GET /api/dsh-session-card/rows?ids=…`，走 DSH
 dsh plugin --profile <你的 profile> add @yaorenliang/dsh-session-card
 ```
 
-或者本地开发时把仓库 `dsh plugin add link:/path/to/dsh-session-card` 进 profile，改完 `pnpm build` 重启实例。
+准备好新版本、也可以直接从仓库出包安装：
+
+```sh
+git clone git@github.com:yaorenliang/dsh-session-card.git
+cd dsh-session-card && pnpm install && pnpm build && pnpm pack
+dsh plugin --profile <你的 profile> add ./yaorenliang-dsh-session-card-0.1.0.tgz
+```
+
+**装完要重启 DSH 实例**：profile 的插件表在启动时读取，Loader 没有文件监视，热加载只会重建客户端 bundle，不会把新插件挂进 Host。
 
 要求 DSH `>=0.2.2-rc.1 <0.3.0`、Node `>=20`。
 
@@ -69,6 +79,9 @@ src/
   core/       prompt 摘要、子会话计数、预设读取（纯函数，有单测）
   host/       唯一的只读路由 + 结构化 Host 契约
   client/     行绘制、设置行、轮询与样式注入
+docs/
+  showcase.html  介绍页（截图就是从它来的，可直接在浏览器打开）
+  showcase.png   README 顶部那张图
 ```
 
 ## 边界

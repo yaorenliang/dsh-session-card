@@ -1,9 +1,12 @@
-/* The settings row: a title, one explanatory line, and three switches that
+/* The settings row: a title, one explanatory line, and four switches that
    follow the same divider rhythm as the platform's own preference rows.
 
-   The switches are the platform switch: a 36x20 pill on the brand colour with
-   a 16px thumb, drawn from the same tokens the official control uses, so the
-   row reads as one of DSH's own preferences rather than a foreign widget. */
+   The switches are the platform switch itself, not a lookalike: the track is
+   36x20, the thumb is 16px sitting in the track's 2px padding, the checked
+   track is the brand colour, and `corner-shape: round` is what makes the pill
+   read as a capsule rather than a rounded rectangle. The styles are copied
+   from the platform's own switch rules because the component lives in the
+   shell bundle and a plugin cannot import it. */
 
 .dsc-settings-group {
   display: flex;
@@ -45,47 +48,51 @@
   cursor: pointer;
 }
 
+/* The track. `padding: 2px` positions the thumb by ordinary flow, which is how
+   the platform switch does it — an absolutely placed thumb drifts when the
+   row's font metrics change. */
 .dsc-settings-toggle input[type="checkbox"] {
+  box-sizing: border-box;
   position: relative;
-  flex: none;
+  flex: 0 0 auto;
   width: 36px;
   height: 20px;
   margin: 0;
-  padding: 0;
+  padding: 2px;
   border: 0;
   border-radius: 999px;
+  corner-shape: round;
   background: var(--dsw-alias-border-l3);
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
-  transition: background 150ms ease-out;
+  transition: background 120ms ease;
 }
 
 .dsc-settings-toggle input[type="checkbox"]::after {
   content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
+  display: block;
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--dsw-alias-label-primary-foreground);
-  transition: transform 150ms ease-out;
+  corner-shape: round;
+  background: var(--dsw-alias-switch-thumb);
+  transition: transform 120ms ease;
 }
 
 .dsc-settings-toggle input[type="checkbox"]:checked {
-  /* The platform switch draws its track on the label colour and its thumb on
-     the colour that reads against it, which is what makes it invert cleanly
-     between the light and dark palettes. */
-  background: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-brand-primary);
 }
 
+/* A checked switch's thumb is the colour that reads against the brand track;
+   an unchecked one uses the dedicated thumb token, which is a step dimmer. */
 .dsc-settings-toggle input[type="checkbox"]:checked::after {
+  background: var(--dsw-alias-label-primary-foreground);
   transform: translateX(16px);
 }
 
 .dsc-settings-toggle input[type="checkbox"]:focus-visible {
-  outline: 2px solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
   outline-offset: 2px;
 }
 

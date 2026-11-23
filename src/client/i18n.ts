@@ -28,7 +28,7 @@ const ZH = {
   'settings.enable': '启用卡片',
   'settings.showPrompt': '显示提问行',
   'settings.showChips': '显示运行徽标',
-  'settings.stickyChips': '徽标常驻（没有运行时也占位）',
+  'settings.stickyChips': '徽标常驻',
 } as const
 
 export type MessageKey = keyof typeof ZH

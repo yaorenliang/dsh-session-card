@@ -10,6 +10,17 @@
    Only design tokens are used, so the card follows light, dark, and any theme
    the platform ships. */
 
+/* Why a card carries a rule between sessions.
+
+   The official list separates sessions with air alone: rows are 32px tall with
+   a 2px gap, and the eye reads that thin rhythm as separation by itself. A card
+   is roughly twice that tall, so the gap stops doing that work and two
+   neighbouring cards read as one block of text.
+
+   The rule is the platform's own idiom for exactly this: the hairline width
+   token is DPR-aware, and the border-l1 step is the faintest line DSH draws.
+   It is painted at the card's bottom edge, which lands inside the list's own
+   2px gap, so it belongs to neither session and moves nothing. */
 [data-dsc-card] {
   display: grid;
   height: auto;
@@ -27,14 +38,53 @@
   align-items: center;
   align-content: start;
   gap: 0 6px;
-  padding-block: 3px;
+  /* More air inside the card than between two cards: 5px above and below makes
+     a card read as one object, and the list's own 2px gap stays the tighter
+     interval, so the eye groups each card correctly. */
+  padding-block: 5px;
+  /* The rule is positioned against the row; the official list only becomes a
+     positioning context for the row it is highlighting during a drag. */
+  position: relative;
+}
+
+/* One hairline, drawn the way the platform draws its own separators: a 0.5px
+   box painted with the border-l2 step — not a border, and not border-l1.
+
+   Both of those details are the platform's, not an opinion. Its separator rule
+   is `height: .5px; background: var(--dsw-alias-border-l2)`, and border-l2 is
+   what it uses for row separators 48 times across the bundled styles against 12
+   for l3 and 6 for l1. Drawn as a background rather than a border, the line also
+   stays exactly 0.5 device pixels instead of inheriting a layout box.
+
+   Inset to the content column so it reads as a line inside the list rather than
+   a cut across the sidebar. The official drag indicator paints this same
+   pseudo-element with two classes of specificity, so a row being dragged into
+   still shows the insertion marker and not this line. */
+[data-dsc-card]::after {
+  content: '';
+  position: absolute;
+  left: 34px;
+  right: 4px;
+  bottom: -1px;
+  height: 0.5px;
+  background: var(--dsw-alias-border-l2);
+  pointer-events: none;
+}
+
+/* A hovered or selected row already says "this one" with its fill; a line
+   drawn through that fill only competes with it. */
+[data-dsc-card]:hover::after,
+[data-dsc-card]:focus-within::after,
+[data-dsc-card][data-dsc-selected]::after {
+  background: transparent;
 }
 
 /* The official icon keeps its place on every line. */
+/* The status cell is 20px tall in a 20px title track, so it needs no offset of
+   its own: the row's own padding puts it where the official row had it. */
 [data-dsc-card] > [data-dsc-role="slot"] {
   grid-area: slot;
   align-self: start;
-  margin-top: 3px;
 }
 
 /* The official title keeps the cell it always had. */
@@ -49,7 +99,6 @@
 [data-dsc-card] > [data-dsc-role="actions"] {
   grid-area: rest;
   align-self: start;
-  margin-top: 3px;
 }
 
 [data-dsc-card] > [data-dsc-role="prompt"] {
@@ -129,33 +178,58 @@
   opacity: 0.85;
 }
 
-/* The preset badge names which agent this session runs. It is the one badge
-   that carries a word rather than a count, so it keeps the platform's own
-   preset colour and stays legible at 11px: the id is lowercase ASCII, which is
-   narrower than any Chinese label and holds up without tracking. */
+/* One badge tier, drawn three ways.
+
+   Three filled capsules side by side read as a single grey band, and a band
+   fights the title for attention. So only work that is actually happening gets
+   a fill; everything factual or quiet is set as plain text on the sidebar's own
+   background. That leaves at most one coloured capsule on the line, which is
+   the one thing worth catching the eye. */
+
+/* The preset names which agent this session runs. It is a fact about the
+   session, not an activity, so it carries no fill — but it stays first on the
+   line so the reading order is "what this is, then what it is doing". The
+   glyph is dimmed a step so the id, which is the part a person scans for,
+   leads. */
 [data-dsc-role="chips"] > span[data-dsc-chip="preset"] {
-  background: var(--dsw-alias-card-fill);
-  color: var(--dsw-alias-label-secondary);
+  padding-inline: 0;
+  color: var(--dsw-alias-label-tertiary);
   font-family: var(--dsw-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   letter-spacing: 0.01em;
 }
 
-[data-dsc-role="chips"] > span[data-dsc-chip="agents"] {
+[data-dsc-role="chips"] > span[data-dsc-chip="preset"] > svg {
+  opacity: 0.6;
+}
+
+/* Subagents are the only badge that can shout, because a running subagent is
+   the thing a person most often needs to notice. It keeps the platform's warn
+   fill, and because the preset no longer has one, that fill is now the only
+   colour on the line. */
+[data-dsc-role="chips"] > span[data-dsc-chip="agents"]:not([data-dsc-idle]) {
   background: var(--dsw-alias-state-warn-tertiary);
   color: var(--dsw-alias-state-warn-label);
 }
 
-[data-dsc-role="chips"] > span[data-dsc-chip="jobs"] {
-  background: var(--dsw-alias-card-fill);
-  color: var(--dsw-alias-label-secondary);
+/* Background jobs are quiet by nature — a long build or a watcher can run for
+   hours — so they read as a count, not an alert. */
+[data-dsc-role="chips"] > span[data-dsc-chip="jobs"]:not([data-dsc-idle]) {
+  padding-inline: 0;
+  color: var(--dsw-alias-label-tertiary);
 }
 
-/* A badge for work that is not happening keeps its place and drops its
-   colour: the line stays put, so the row never changes height between
-   working and idle, and a quiet row does not look like it is alerting. */
+/* Work that is not happening keeps its place and all but disappears: the line
+   stays put, so the card never changes height between working and idle, and a
+   quiet row does not look like it is alerting. Only the glyph and a bare 0
+   remain, one step above invisible. */
 [data-dsc-role="chips"] > span[data-dsc-idle] {
-  background: var(--dsw-alias-interactive-bg-hover);
+  padding-inline: 0;
+  background: none;
   color: var(--dsw-alias-label-caption);
+}
+
+[data-dsc-role="chips"] > span[data-dsc-idle] > svg {
+  opacity: 0.5;
 }
 
 /* The one gesture the card plays as it appears.

@@ -51,16 +51,18 @@ The browser keeps the previous answer on this machine (`localStorage`, key `dsh-
 
 ## Install
 
-```sh
-dsh plugin --profile <your profile> add @yaorenliang/dsh-session-card
-```
-
-To build a new version first, or install straight from the repository:
+Install straight from the repository — this works today and needs nothing published:
 
 ```sh
 git clone git@github.com:yaorenliang/dsh-session-card.git
 cd dsh-session-card && pnpm install && pnpm build && pnpm pack
 dsh plugin --profile <your profile> add ./yaorenliang-dsh-session-card-0.1.1.tgz   # the name carries the version you packed
+```
+
+The registry install below becomes available once the package is published; until then it resolves to a 404:
+
+```sh
+dsh plugin --profile <your profile> add @yaorenliang/dsh-session-card
 ```
 
 **Restart the DSH instance afterwards.** A profile's plugin table is read at boot and the Loader watches no files: hot reload rebuilds the client bundle but never mounts a newly added Host plugin.

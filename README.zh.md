@@ -51,16 +51,18 @@ Host 只开一个只读路由 `GET /api/dsh-session-card/rows?ids=…`，走 DSH
 
 ## 装
 
-```sh
-dsh plugin --profile <你的 profile> add @yaorenliang/dsh-session-card
-```
-
-准备好新版本、也可以直接从仓库出包安装：
+从仓库直接出包安装——这条现在就能用，不依赖任何已发布的东西：
 
 ```sh
 git clone git@github.com:yaorenliang/dsh-session-card.git
 cd dsh-session-card && pnpm install && pnpm build && pnpm pack
-dsh plugin --profile <你的 profile> add ./yaorenliang-dsh-session-card-0.1.0.tgz
+dsh plugin --profile <你的 profile> add ./yaorenliang-dsh-session-card-0.1.1.tgz
+```
+
+下面这条 registry 安装要等包发布之后才成立；在那之前它会解析到 404：
+
+```sh
+dsh plugin --profile <你的 profile> add @yaorenliang/dsh-session-card
 ```
 
 **装完要重启 DSH 实例**：profile 的插件表在启动时读取，Loader 没有文件监视，热加载只会重建客户端 bundle，不会把新插件挂进 Host。

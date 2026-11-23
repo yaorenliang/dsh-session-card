@@ -1,5 +1,9 @@
 /* The settings row: a title, one explanatory line, and three switches that
-   follow the same divider rhythm as the platform's own preference rows. */
+   follow the same divider rhythm as the platform's own preference rows.
+
+   The switches are the platform switch: a 36x20 pill on the brand colour with
+   a 16px thumb, drawn from the same tokens the official control uses, so the
+   row reads as one of DSH's own preferences rather than a foreign widget. */
 
 .dsc-settings-group {
   display: flex;
@@ -25,29 +29,76 @@
 .dsc-settings-toggles {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-top: 2px;
+  gap: 4px;
+  margin-top: 4px;
 }
 
 .dsc-settings-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 6px 0;
-  font-size: 13px;
+  gap: 24px;
+  padding: 4px 0;
+  font-size: 14px;
   line-height: 20px;
   color: var(--dsw-alias-label-primary);
   cursor: pointer;
 }
 
-.dsc-settings-toggle input {
+.dsc-settings-toggle input[type="checkbox"] {
+  position: relative;
   flex: none;
+  width: 36px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--dsw-alias-border-l3);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: background 150ms ease-out;
+}
+
+.dsc-settings-toggle input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
   width: 16px;
   height: 16px;
-  margin: 0;
-  accent-color: var(--dsw-alias-state-warn-label);
-  cursor: pointer;
+  border-radius: 50%;
+  background: var(--dsw-alias-label-primary-foreground);
+  transition: transform 150ms ease-out;
+}
+
+.dsc-settings-toggle input[type="checkbox"]:checked {
+  /* The platform switch draws its track on the label colour and its thumb on
+     the colour that reads against it, which is what makes it invert cleanly
+     between the light and dark palettes. */
+  background: var(--dsw-alias-label-primary);
+}
+
+.dsc-settings-toggle input[type="checkbox"]:checked::after {
+  transform: translateX(16px);
+}
+
+.dsc-settings-toggle input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: 2px;
+}
+
+.dsc-settings-toggle input[type="checkbox"]:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsc-settings-toggle input[type="checkbox"],
+  .dsc-settings-toggle input[type="checkbox"]::after {
+    transition: none;
+  }
 }
 
 .dsc-settings-off {

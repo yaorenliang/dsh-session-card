@@ -67,6 +67,10 @@ app, not the catalog.」* 你在「发现」里看到的每一条都来自一个
 
 ## 本仓库现状
 
-- 包：`@yaorenliang/dsh-session-card@0.1.1`，公开，MIT。
+- 包：`@yaorenliang/dsh-session-card`，公开，MIT。每个 release 都挂着打好的包，
+  所以市场能给下载而不是源码构建：`releases/latest/download/dsh-session-card.tgz`。
+  registry 上还是 0.1.1——这个仓库还没配 npm trusted publishing，而没有 trusted
+  publisher 的 tag 发不出任何东西。
 - 封面图：`docs/screenshot-card-en.png`，对 20 分门槛实测 167 分。
-- 注册表条目：PR [awesome-dsh-plugin#18223](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/18223)。
+- 注册表条目：PR [awesome-dsh-plugin#18225](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/18225)。
+  首次门禁只有一行没过——仓库当时 0.1 天——而这一项门禁每天自己重跑，不需要重新提交。

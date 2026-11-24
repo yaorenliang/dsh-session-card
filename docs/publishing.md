@@ -75,6 +75,12 @@ next scrape.
 
 ## This repository's status
 
-- Package: `@yaorenliang/dsh-session-card@0.1.1`, public, MIT.
+- Package: `@yaorenliang/dsh-session-card`, public, MIT. Every release attaches the
+  built plugin, so the market can offer a download instead of a build:
+  `releases/latest/download/dsh-session-card.tgz`. The registry still holds 0.1.1 —
+  npm trusted publishing is not configured for this repository yet, and a tag with
+  no trusted publisher publishes nothing.
 - Cover image: `docs/screenshot-card-en.png`, score 167 against the 20 gate.
-- Registry entry: PR [awesome-dsh-plugin#18223](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/18223).
+- Registry entry: PR [awesome-dsh-plugin#18225](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/18225).
+  Its first gate run failed on one row only — the repository was 0.1 days old — and
+  the gate re-runs that check itself once a day. Nothing needed resubmitting.

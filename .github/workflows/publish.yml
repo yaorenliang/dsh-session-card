@@ -72,11 +72,19 @@ jobs:
           fi
       # A prebuilt tarball is how someone installs this without the build step,
       # and it is what a storefront offers when npm is not an option.
+      #
+      # Two names, one file. The versioned name is the honest one to download.
+      # The version-free name exists so that a storefront can link
+      # `releases/latest/download/dsh-session-card.tgz` and keep working after
+      # the next release: `latest` is resolved when the link is clicked, but the
+      # filename in it is taken literally, so a versioned name there would resolve
+      # to a file the newer release does not have and 404 — quietly, months later.
       - name: Attach the tarball
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           pnpm pack --pack-destination dist
+          cp dist/*.tgz dist/dsh-session-card.tgz
           gh release upload "$TAG" dist/*.tgz --clobber
       # Publishing twice for one version is the one mistake that cannot be taken
       # back, so the registry itself decides whether this run publishes.

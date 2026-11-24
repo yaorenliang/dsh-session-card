@@ -59,7 +59,7 @@ Every release carries the built package as an attached tarball. Download it from
 dsh plugin --profile <your profile> add ./dsh-session-card.tgz
 ```
 
-> **Don't install it by name yet.** `dsh plugin add @yaorenliang/dsh-session-card` resolves to whatever the registry holds, and the registry still holds 0.1.1 — the release before the cascade fix, which renders as a squeezed one-line row on DSH 0.2.3 and later. Publishing to the registry needs a one-time trusted-publisher setting on the package's npm page; the tarball above is the install path until that exists.
+> **Check the version before installing by name.** `dsh plugin add @yaorenliang/dsh-session-card` installs whatever the registry holds, and the registry has not been updated since 0.1.1 — the release before the cascade fix, which renders as a squeezed one-line row on DSH 0.2.3 and later. Registry publishing needs a one-time trusted-publisher setting on the package's npm page; until that exists, the tarball above is the install path. `npm view @yaorenliang/dsh-session-card version` tells you which case you are in.
 
 **Restart the DSH instance afterwards.** A profile's plugin table is read at boot and the Loader watches no files: hot reload rebuilds the client bundle but never mounts a newly added Host plugin.
 

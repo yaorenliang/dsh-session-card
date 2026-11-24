@@ -57,7 +57,7 @@ Host 只开一个只读路由 `GET /api/dsh-session-card/rows?ids=…`，走 DSH
 dsh plugin --profile <你的 profile> add ./dsh-session-card.tgz
 ```
 
-> **先别按名字装。** `dsh plugin add @yaorenliang/dsh-session-card` 解析到 registry 上现有的版本，而 registry 上还是 0.1.1——层叠修复之前的那一版，在 DSH 0.2.3 及以后会被压成一行。要发到 registry 得先在 npm 包页面上配一次 trusted publisher；在它存在之前，上面那个附件就是安装入口。
+> **按名字装之前先看版本。** `dsh plugin add @yaorenliang/dsh-session-card` 装的是 registry 上现有的那一版，而 registry 从 0.1.1 之后就没再更新——那是层叠修复之前的一版，在 DSH 0.2.3 及以后会被压成一行。要发到 registry 得先在 npm 包页面上配一次 trusted publisher；在它存在之前，上面那个附件就是安装入口。`npm view @yaorenliang/dsh-session-card version` 能告诉你现在是哪种情况。
 
 **装完要重启 DSH 实例**：profile 的插件表在启动时读取，Loader 没有文件监视，热加载只会重建客户端 bundle，不会把新插件挂进 Host。
 

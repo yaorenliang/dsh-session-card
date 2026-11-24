@@ -2,6 +2,18 @@
 
 English | [中文](./CHANGELOG.zh.md)
 
+## 0.1.4 — 2026-11-24
+
+0.1.3 was tagged before the install section had been corrected, so its
+tarball would have shipped the paragraph that told people to install by
+name — the path that resolves to 0.1.1 and renders as a squeezed row. The
+text is right now; this release exists so the artifact matches it.
+
+The publish workflow also attaches the packed tarball to its release, which
+is what the install section points at, and treats ENEEDAUTH as the settings
+state it is: npm has not been told to trust this repository yet, so it warns
+and passes instead of failing a job whose release is already complete.
+
 ## 0.1.3 — 2026-11-24
 
 Two defects that never showed on a developer machine, and both of which

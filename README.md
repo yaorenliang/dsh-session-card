@@ -56,7 +56,7 @@ The browser keeps the previous answer on this machine (`localStorage`, key `dsh-
 Every release carries the built package as an attached tarball. Download it from the [latest release](https://github.com/yaorenliang/dsh-session-card/releases/latest) and add that file — no clone, no build:
 
 ```sh
-dsh plugin --profile <your profile> add ./yaorenliang-dsh-session-card-0.1.4.tgz
+dsh plugin --profile <your profile> add ./dsh-session-card.tgz
 ```
 
 > **Don't install it by name yet.** `dsh plugin add @yaorenliang/dsh-session-card` resolves to whatever the registry holds, and the registry still holds 0.1.1 — the release before the cascade fix, which renders as a squeezed one-line row on DSH 0.2.3 and later. Publishing to the registry needs a one-time trusted-publisher setting on the package's npm page; the tarball above is the install path until that exists.

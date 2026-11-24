@@ -2,6 +2,15 @@
 
 English | [中文](./CHANGELOG.zh.md)
 
+## 0.1.5 — 2026-11-24
+
+Releases now carry the packed tarball under two names: the versioned one,
+and a version-free `dsh-session-card.tgz` beside it. `releases/latest/download/`
+resolves `latest` when the link is clicked but takes the filename literally,
+so linking the versioned name works on the day it is written and 404s the
+moment the next release lands — quietly, months later. The stable name is
+what the install section and any storefront can point at and keep working.
+
 ## 0.1.4 — 2026-11-24
 
 0.1.3 was tagged before the install section had been corrected, so its

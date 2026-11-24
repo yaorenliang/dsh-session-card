@@ -53,19 +53,13 @@ The browser keeps the previous answer on this machine (`localStorage`, key `dsh-
 
 ## Install
 
-Install straight from the repository — this works today and needs nothing published:
+Every release carries the built package as an attached tarball. Download it from the [latest release](https://github.com/yaorenliang/dsh-session-card/releases/latest) and add that file — no clone, no build:
 
 ```sh
-git clone git@github.com:yaorenliang/dsh-session-card.git
-cd dsh-session-card && pnpm install && pnpm build && pnpm pack
-dsh plugin --profile <your profile> add ./yaorenliang-dsh-session-card-0.1.1.tgz   # the name carries the version you packed
+dsh plugin --profile <your profile> add ./yaorenliang-dsh-session-card-0.1.3.tgz
 ```
 
-The registry install below becomes available once the package is published; until then it resolves to a 404:
-
-```sh
-dsh plugin --profile <your profile> add @yaorenliang/dsh-session-card
-```
+> **Don't install it by name yet.** `dsh plugin add @yaorenliang/dsh-session-card` resolves to whatever the registry holds, and the registry still holds 0.1.1 — the release before the cascade fix, which renders as a squeezed one-line row on DSH 0.2.3 and later. Publishing to the registry needs a one-time trusted-publisher setting on the package's npm page; the tarball above is the install path until that exists.
 
 **Restart the DSH instance afterwards.** A profile's plugin table is read at boot and the Loader watches no files: hot reload rebuilds the client bundle but never mounts a newly added Host plugin.
 

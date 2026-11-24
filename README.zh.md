@@ -51,19 +51,13 @@ Host 只开一个只读路由 `GET /api/dsh-session-card/rows?ids=…`，走 DSH
 
 ## 装
 
-从仓库直接出包安装——这条现在就能用，不依赖任何已发布的东西：
+每个 release 都把打好的包作为附件挂在上面。从[最新 release](https://github.com/yaorenliang/dsh-session-card/releases/latest) 下下来，直接装那个文件——不用 clone、不用 build：
 
 ```sh
-git clone git@github.com:yaorenliang/dsh-session-card.git
-cd dsh-session-card && pnpm install && pnpm build && pnpm pack
-dsh plugin --profile <你的 profile> add ./yaorenliang-dsh-session-card-0.1.1.tgz
+dsh plugin --profile <你的 profile> add ./yaorenliang-dsh-session-card-0.1.3.tgz
 ```
 
-下面这条 registry 安装要等包发布之后才成立；在那之前它会解析到 404：
-
-```sh
-dsh plugin --profile <你的 profile> add @yaorenliang/dsh-session-card
-```
+> **先别按名字装。** `dsh plugin add @yaorenliang/dsh-session-card` 解析到 registry 上现有的版本，而 registry 上还是 0.1.1——层叠修复之前的那一版，在 DSH 0.2.3 及以后会被压成一行。要发到 registry 得先在 npm 包页面上配一次 trusted publisher；在它存在之前，上面那个附件就是安装入口。
 
 **装完要重启 DSH 实例**：profile 的插件表在启动时读取，Loader 没有文件监视，热加载只会重建客户端 bundle，不会把新插件挂进 Host。
 

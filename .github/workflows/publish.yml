@@ -1,20 +1,28 @@
 name: Publish
 
-# Trusted publishing: npm trusts this repository and this filename, and the token
-# is minted per run from the OIDC identity. No secret is stored anywhere.
+# A tag is the whole release. This workflow does three things with it, and each
+# one is idempotent, so re-running an old tag only repairs what is missing —
+# that is the documented way to recover a tag whose first run died halfway.
 #
-# A tag push needs no browser and no personal token: the same job creates the
-# release for that tag and publishes the package.
+#   1. create the GitHub Release, with the notes already written in CHANGELOG.md
+#   2. attach the packed tarball to it, which is what a storefront offers to
+#      someone who would rather not build from source
+#   3. publish to npm, if npm trusts this repository
 #
-# Every step is idempotent, so re-running on an old tag only repairs what is
-# missing. Re-running is the documented way to recover a tag whose first run
-# died before the registry accepted the tarball.
+# Step 3 is the only one that needs a credential: npm trusted publishing mints a
+# token from the OIDC identity below, and nothing is stored. Until that is
+# configured on the package's npm settings page, the step is expected to end in
+# ENEEDAUTH — the release above is already complete without it.
 on:
   release:
     types: [published]
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to release again, e.g. v0.1.3
+        required: true
 
 permissions:
   contents: write
@@ -23,8 +31,13 @@ permissions:
 jobs:
   npm:
     runs-on: ubuntu-latest
+    env:
+      # A dispatch runs on main's copy of this file for the tag it is given.
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -36,27 +49,35 @@ jobs:
       - run: npm install --global npm@latest
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify
-      # The notes are already written in CHANGELOG.md; a generated compare link
-      # is not a description of what changed. The extraction is a script because
-      # bash quotes a `node -e` argument before node sees it: the character class
-      # in the old inline version expanded to a bad substitution, and the failure
-      # skipped the publish step below on every tag that went through it.
-      - name: Release this tag
-        if: startsWith(github.ref, 'refs/tags/')
+      # The notes are already in CHANGELOG.md; a generated compare link is not a
+      # description of what changed. The extraction is a script because bash
+      # quotes an inline `node -e` argument before node sees it: the character
+      # class in the old inline version expanded to a bad substitution, the step
+      # exited 1, and the publish below was skipped on every tag that went
+      # through it.
+      - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="$GITHUB_REF_NAME"
-          if gh release view "$tag" >/dev/null 2>&1; then
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release $TAG already exists"
             exit 0
           fi
           notes=$(mktemp)
-          node scripts/release-notes.mjs "$tag" > "$notes"
+          node scripts/release-notes.mjs "$TAG" > "$notes"
           if [ -s "$notes" ]; then
-            gh release create "$tag" --title "$tag" --notes-file "$notes"
+            gh release create "$TAG" --title "$TAG" --notes-file "$notes"
           else
-            gh release create "$tag" --title "$tag" --generate-notes
+            gh release create "$TAG" --title "$TAG" --generate-notes
           fi
+      # A prebuilt tarball is how someone installs this without the build step,
+      # and it is what a storefront offers when npm is not an option.
+      - name: Attach the tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pnpm pack --pack-destination dist
+          gh release upload "$TAG" dist/*.tgz --clobber
       # Publishing twice for one version is the one mistake that cannot be taken
       # back, so the registry itself decides whether this run publishes.
       - name: Publish to npm

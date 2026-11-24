@@ -10,9 +10,9 @@ name: Publish
 #   3. publish to npm, if npm trusts this repository
 #
 # Step 3 is the only one that needs a credential: npm trusted publishing mints a
-# token from the OIDC identity below, and nothing is stored. Until that is
-# configured on the package's npm settings page, the step is expected to end in
-# ENEEDAUTH — the release above is already complete without it.
+# token from the OIDC identity below, and nothing is stored. It works only where
+# npm has been told which repository and which filename may publish this package;
+# anywhere else it ends in ENEEDAUTH, and the release above stands on its own.
 on:
   release:
     types: [published]
@@ -97,9 +97,9 @@ jobs:
           fi
           log=$(mktemp)
           # ENEEDAUTH is the state of the settings page, not a defect in this
-          # commit: npm has not been told yet that this repository may publish,
-          # and the release above is already complete without it. Everything
-          # else is a real failure and stays red.
+          # commit: npm has not been told that this repository may publish, and
+          # the release above is already complete without it. Everything else is
+          # a real failure and stays red.
           if npm publish --access public >"$log" 2>&1; then
             cat "$log"
             exit 0

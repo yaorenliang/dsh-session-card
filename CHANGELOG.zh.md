@@ -2,6 +2,17 @@
 
 [English](./CHANGELOG.md) | 中文
 
+## 0.1.6 — 2026-11-24
+
+registry 又能用了，所以安装段回到最平常的那句：
+`dsh plugin add @yaorenliang/dsh-session-card`。0.1.2 到 0.1.5 都带着一段话，
+让读者改用 release 附件安装——在「什么都发不出去」的时候它是实话，
+在 trusted publishing 配好的那一刻就成了错话。附件仍然挂着、也仍然写在文档里，
+身份是「不想碰 registry 的机器」的备选路径。
+
+发布本身改成 OIDC trusted publishing：工作流每次用仓库身份换一枚 token，
+任何地方都不留凭据。0.1.1 是最后一版用手工令牌发出去的。
+
 ## 0.1.5 — 2026-11-24
 
 release 现在把打好的 tarball 挂成两个名字：带版本号的那个，以及旁边一个不带版本的

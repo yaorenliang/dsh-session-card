@@ -2,6 +2,19 @@
 
 English | [中文](./CHANGELOG.zh.md)
 
+## 0.1.6 — 2026-11-24
+
+The registry works again, so the install section says the ordinary thing:
+`dsh plugin add @yaorenliang/dsh-session-card`. 0.1.2 through 0.1.5 all shipped
+a paragraph telling the reader to install from the release tarball instead,
+which was true while nothing could publish and became wrong the moment trusted
+publishing was configured. The tarball is still attached and still documented —
+as the fallback for a machine that would rather not reach the registry.
+
+Publishing itself is now OIDC trusted publishing: the workflow mints a token per
+run from the repository's identity, so no credential lives anywhere. 0.1.1 is the
+last version that came from a hand-made token.
+
 ## 0.1.5 — 2026-11-24
 
 Releases now carry the packed tarball under two names: the versioned one,

@@ -75,12 +75,11 @@ next scrape.
 
 ## This repository's status
 
-- Package: `@yaorenliang/dsh-session-card`, public, MIT. Every release attaches the
-  built plugin, so the market can offer a download instead of a build:
-  `releases/latest/download/dsh-session-card.tgz`. Registry publishing has never
-  worked from this repository: npm trusted publishing is not configured for it, and
-  a tag with no trusted publisher publishes nothing. The entry below therefore
-  points at the tarball rather than at the package name.
+- Package: `@yaorenliang/dsh-session-card`, public, MIT, on the registry from 0.1.5
+  onward. Publishing is OIDC trusted publishing: no token is stored, the workflow
+  mints one per run, and `0.1.1` is the last version that came from a hand-made
+  token. Every release also attaches the built tarball, so the market can offer a
+  download instead of a build: `releases/latest/download/dsh-session-card.tgz`.
 - Cover image: `docs/screenshot-card-en.png`, score 167 against the 20 gate.
 - Registry entry: PR [awesome-dsh-plugin#18225](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/18225).
   Its first gate run failed on one row only — the repository was 0.1 days old — and

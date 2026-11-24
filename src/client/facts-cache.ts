@@ -20,21 +20,32 @@ const CACHE_KEY = 'dsh-session-card:facts'
 /** Rows kept; a sidebar never shows more, and the entry stays small. */
 const MAX_ENTRIES = 500
 
-/** Facts older than this are dropped rather than shown as current. */
-const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
-
-/** One stored row, with short keys: this entry is written on every poll. */
+/** One stored row, with short keys: this entry is written on every change. */
 interface StoredRow {
   /** The question line, when there was one. */
   readonly p?: string
   /** Running job count. */
   readonly j: number
-  /** When it was read. */
-  readonly t: number
 }
 
 interface StoredBody {
   readonly rows?: Record<string, StoredRow>
+}
+
+/**
+ * Parse what is stored, treating anything unreadable as nothing stored.
+ * @param storage - the storage to read.
+ * @returns the stored rows by session id; empty when the entry is missing or broken.
+ */
+function readRows(storage: Storage): Record<string, StoredRow> {
+  try {
+    const raw = storage.getItem(CACHE_KEY)
+    if (raw === null) return {}
+    const body = JSON.parse(raw) as StoredBody
+    return body.rows ?? {}
+  } catch {
+    return {}
+  }
 }
 
 /**
@@ -44,24 +55,14 @@ interface StoredBody {
  */
 export function loadFacts(storage: Storage | undefined): Record<string, RowFacts> {
   if (storage === undefined) return {}
-  try {
-    const raw = storage.getItem(CACHE_KEY)
-    if (raw === null) return {}
-    const body = JSON.parse(raw) as StoredBody
-    const stored = body.rows ?? {}
-    const now = Date.now()
-    const facts: Record<string, RowFacts> = {}
-    for (const [id, row] of Object.entries(stored)) {
-      if (typeof row?.j !== 'number') continue
-      if (typeof row.t !== 'number' || now - row.t > MAX_AGE_MS) continue
-      facts[id] = typeof row.p === 'string' && row.p !== ''
-        ? { prompt: row.p, jobs: row.j }
-        : { jobs: row.j }
-    }
-    return facts
-  } catch {
-    return {}
+  const facts: Record<string, RowFacts> = {}
+  for (const [id, row] of Object.entries(readRows(storage))) {
+    if (typeof row?.j !== 'number') continue
+    facts[id] = typeof row.p === 'string' && row.p !== ''
+      ? { prompt: row.p, jobs: row.j }
+      : { jobs: row.j }
   }
+  return facts
 }
 
 /**
@@ -72,18 +73,20 @@ export function loadFacts(storage: Storage | undefined): Record<string, RowFacts
 export function saveFacts(storage: Storage | undefined, facts: Record<string, RowFacts>): void {
   if (storage === undefined) return
   try {
-    const now = Date.now()
     const rows: Record<string, StoredRow> = {}
-    const ids = Object.keys(facts)
-    for (const id of ids.slice(-MAX_ENTRIES)) {
+    for (const id of Object.keys(facts).slice(-MAX_ENTRIES)) {
       const fact = facts[id]
       if (fact === undefined) continue
       rows[id] = fact.prompt === undefined
-        ? { j: fact.jobs, t: now }
-        : { p: fact.prompt, j: fact.jobs, t: now }
+        ? { j: fact.jobs }
+        : { p: fact.prompt, j: fact.jobs }
     }
     /* The poll runs every couple of seconds and usually has nothing new to
-       say; a synchronous storage write per tick is not worth paying for. */
+       say, and a synchronous storage write per tick is not worth paying for.
+       The body is a function of the facts and nothing else — no timestamp —
+       so an unchanged set serialises to the very same string and is skipped.
+       A clock reading in here would make every body unique and silently turn
+       this comparison into a write. */
     const body = JSON.stringify({ rows })
     if (storage.getItem(CACHE_KEY) === body) return
     storage.setItem(CACHE_KEY, body)

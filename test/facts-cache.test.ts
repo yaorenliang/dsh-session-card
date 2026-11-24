@@ -1,17 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { loadFacts, saveFacts } from '../src/client/facts-cache.ts'
 
-/** A storage stand-in with the parts the cache uses. */
-function makeStorage(): Storage {
+/** A storage stand-in with the parts the cache uses, and a write counter. */
+function makeStorage(): Storage & { readonly writes: number } {
   const map = new Map<string, string>()
-  return {
+  let writes = 0
+  const storage = {
     get length(): number { return map.size },
     clear: () => { map.clear() },
     getItem: (key: string) => map.get(key) ?? null,
     key: (index: number) => [...map.keys()][index] ?? null,
     removeItem: (key: string) => { map.delete(key) },
-    setItem: (key: string, value: string) => { map.set(key, value) },
+    setItem: (key: string, value: string) => { writes += 1; map.set(key, value) },
   } as Storage
+  return Object.defineProperty(storage, 'writes', { get: () => writes }) as Storage & { readonly writes: number }
 }
 
 describe('facts cache', () => {
@@ -28,29 +30,27 @@ describe('facts cache', () => {
     expect(loadFacts(undefined)).toEqual({})
   })
 
-  it('ignores an entry too old to be current', () => {
-    const storage = makeStorage()
-    saveFacts(storage, { a: { prompt: '旧问题', jobs: 1 } })
-    const body = JSON.parse(storage.getItem('dsh-session-card:facts') ?? '{}') as {
-      rows?: Record<string, { t: number }>
-    }
-    const row = body.rows?.['a']
-    if (row !== undefined) row.t = Date.now() - 8 * 24 * 60 * 60 * 1000
-    storage.setItem('dsh-session-card:facts', JSON.stringify(body))
-    expect(loadFacts(storage)).toEqual({})
-  })
-
   it('survives a corrupt entry instead of throwing into the sidebar', () => {
     const storage = makeStorage()
     storage.setItem('dsh-session-card:facts', 'not json')
     expect(loadFacts(storage)).toEqual({})
   })
 
-  it('does not rewrite a storage that already holds the same facts', () => {
+  it('writes once for a poll that has nothing new to say', () => {
     const storage = makeStorage()
     saveFacts(storage, { a: { prompt: '你好', jobs: 0 } })
     const first = storage.getItem('dsh-session-card:facts')
     saveFacts(storage, { a: { prompt: '你好', jobs: 0 } })
+    saveFacts(storage, { a: { prompt: '你好', jobs: 0 } })
+    expect(storage.writes).toBe(1)
     expect(storage.getItem('dsh-session-card:facts')).toBe(first)
+  })
+
+  it('writes again when a count moves, and forgets a session that is gone', () => {
+    const storage = makeStorage()
+    saveFacts(storage, { a: { prompt: '你好', jobs: 0 }, b: { jobs: 1 } })
+    saveFacts(storage, { a: { prompt: '你好', jobs: 3 } })
+    expect(storage.writes).toBe(2)
+    expect(loadFacts(storage)).toEqual({ a: { prompt: '你好', jobs: 3 } })
   })
 })

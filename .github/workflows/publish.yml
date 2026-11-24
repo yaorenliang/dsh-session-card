@@ -7,7 +7,8 @@ name: Publish
 # release for that tag and publishes the package.
 #
 # Every step is idempotent, so re-running on an old tag only repairs what is
-# missing.
+# missing. Re-running is the documented way to recover a tag whose first run
+# died before the registry accepted the tarball.
 on:
   release:
     types: [published]
@@ -36,7 +37,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify
       # The notes are already written in CHANGELOG.md; a generated compare link
-      # is not a description of what changed.
+      # is not a description of what changed. The extraction is a script because
+      # bash quotes a `node -e` argument before node sees it: the character class
+      # in the old inline version expanded to a bad substitution, and the failure
+      # skipped the publish step below on every tag that went through it.
       - name: Release this tag
         if: startsWith(github.ref, 'refs/tags/')
         env:
@@ -47,17 +51,7 @@ jobs:
             exit 0
           fi
           notes=$(mktemp)
-          node -e "
-            const fs = require('node:fs')
-            const changelog = fs.readFileSync('CHANGELOG.md', 'utf8')
-            const tag = process.argv[1].replace(/^v/, '')
-            const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\\\$&')
-            const start = changelog.search(new RegExp('^## ' + escaped, 'm'))
-            if (start < 0) process.exit(0)
-            const rest = changelog.slice(start)
-            const next = rest.slice(1).search(/^## /m)
-            fs.writeFileSync(process.argv[2], next < 0 ? rest.trim() : rest.slice(0, next + 1).trim())
-          " "$tag" "$notes"
+          node scripts/release-notes.mjs "$tag" > "$notes"
           if [ -s "$notes" ]; then
             gh release create "$tag" --title "$tag" --notes-file "$notes"
           else

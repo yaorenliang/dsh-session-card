@@ -2,6 +2,31 @@
 
 English | [中文](./CHANGELOG.zh.md)
 
+## 0.1.3 — 2026-11-24
+
+Two defects that never showed on a developer machine, and both of which
+stopped 0.1.2 from reaching the registry.
+
+The cached facts were written back to storage every two seconds even when
+nothing had changed. Each body carried a `t` timestamp read from the clock, so
+two polls of an unchanged sidebar serialised to two different strings and the
+`getItem(...) === body` guard never matched. That turned a cheap comparison
+into a synchronous write on every tick, and it made the test pinning the
+behaviour depend on whether two calls landed in the same millisecond — which
+is how it failed in CI on Node 22, against an assertion that had been passing
+all along on a faster machine. The body is now a function of the facts and
+nothing else, which is what the guard was always assuming.
+
+The publish workflow created its release from a Node script embedded in a
+double-quoted runner argument. Bash expands `${…}` and `$&` inside those
+quotes before node is started, so the character class
+`[.*+?^${}()|[\]\\]` became a bad substitution and the step exited 1. The
+failure landed before the publish step, so no tag ever reached the registry.
+The extraction now lives in `scripts/release-notes.mjs`, where no shell sees
+it.
+
+`engines.dsh` is unchanged: this is a repair, not an adaptation.
+
 ## 0.1.2 — 2026-11-24
 
 The card was rendering as a squeezed one-line row on DSH 0.2.3. Not a CSS

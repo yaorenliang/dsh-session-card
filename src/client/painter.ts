@@ -272,6 +272,8 @@ export function paintRow(
     shape.title.setAttribute(ROLE_ATTR, 'title')
     shape.rest?.setAttribute(ROLE_ATTR, 'rest')
     shape.actions?.setAttribute(ROLE_ATTR, 'actions')
+    /* Presence is the whole message: every rule selects on the bare attribute,
+       so the card has no variants to name and nothing to keep in sync. */
     row.setAttribute(ROW_ATTR, '')
   }
 
@@ -300,13 +302,6 @@ export function paintRow(
 
   paintChips(lines.chips, badges)
 
-  /* Whatever the badge line carries decides the height, not the question: a
-     chip line that is there keeps the card at its full size from the first
-     paint, so the question can arrive from the Host a moment later without
-     the row growing under the reader. Without a chip line, a card that only
-     has the question stays short. */
-  const full = badges.length > 0
-  row.setAttribute(ROW_ATTR, full ? 'full' : 'slim')
   /* A row that only just became a card grows into the space it needs instead
      of snapping into it; a row that was already a card just repaints. */
   if (appearing && options.animate) playEntrance(row as HTMLElement)

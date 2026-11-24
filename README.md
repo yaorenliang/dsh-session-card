@@ -90,7 +90,7 @@ Build products: `lib/index.js` (the Host half, ESM) and `lib/client.js` (the bro
 src/
   core/       prompt summarising, subagent counting, preset reading (pure, unit-tested)
   host/       the one read-only route + the Host contract it needs
-  client/     row painting, the settings row, polling and style injection
+  client/     row painting, the settings row, polling and stylesheet installation
 docs/
   showcase.html           the showcase page (open it in a browser; the screenshot renders from it)
   showcase.en.html        the same page in English

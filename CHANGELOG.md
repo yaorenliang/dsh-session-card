@@ -2,6 +2,36 @@
 
 English | [中文](./CHANGELOG.zh.md)
 
+## 0.1.2 — 2026-11-24
+
+The card was rendering as a squeezed one-line row on DSH 0.2.3. Not a CSS
+mistake: the rules that lost were never wrong, they were merely outvoted.
+
+Until 0.2.2 each client module appended its own `<style>` from inside its
+factory, so a plugin that applied late landed late in the cascade and won
+ties against the platform's own row rules. From 0.2.3 the renderer collects
+every module's stylesheets and installs them into `document.head` itself,
+in module order, before any plugin factory runs. A self-appended element now
+sits ahead of the platform's styles, and every equal-specificity declaration
+loses: `[data-dsc-card] { display: grid; height: auto }` (0,1,0) against
+`.sessionRow { display: flex; height: 32px }` (0,1,0) resolved to flex and
+32px, so the card's three lines were laid out inside a 32px flex row. Ten
+declarations were being overridden in total.
+
+The stylesheet is now a constructed sheet adopted by the document
+(`new CSSStyleSheet()` → `document.adoptedStyleSheets`). The cascade orders
+adopted sheets after everything in `document.styleSheets` by specification,
+so the rules win for a reason that does not depend on who ran first, on
+specificity, or on `!important` — and disposing the plugin now genuinely
+removes its styles, which the old `<style id>` did not define.
+
+One build still serves both lines: `engines.dsh` is unchanged. Three pieces
+of state that only existed to prop up the old approach are gone with it:
+`STYLE_ID` and the `getElementById` early return, the `[data-dsc-selected]`
+rule (nothing ever wrote that attribute; the official row's own
+`aria-selected` is read instead), and the `full`/`slim` values on
+`data-dsc-card` (no selector read them).
+
 ## 0.1.1 — 2026-11-23
 
 The cover image is now one the plugin market will actually show. It scrapes

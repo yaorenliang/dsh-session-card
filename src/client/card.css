@@ -7,6 +7,14 @@
    official structure stops matching, the decoration pass refuses to tag the
    row and it keeps its official one-line look.
 
+   Every rule here ties with a platform rule on specificity -- [data-dsc-card]
+   is (0,1,0) against .sessionRow's (0,1,0) -- so this file only works because
+   of where it sits in the cascade, never because it says things louder. The
+   stylesheet is a constructed sheet adopted by the document, and the cascade
+   orders adopted sheets after every style element; see stylesheet-install.ts.
+   Adding specificity here, or an !important, would mean the ordering guarantee
+   had stopped holding and the real fault was left unfixed.
+
    Only design tokens are used, so the card follows light, dark, and any theme
    the platform ships. */
 
@@ -72,10 +80,12 @@
 }
 
 /* A hovered or selected row already says "this one" with its fill; a line
-   drawn through that fill only competes with it. */
+   drawn through that fill only competes with it. The selected state is the
+   official row's own aria-selected, not an attribute of ours: the sidebar sets
+   it, and a private copy of it would be one more thing to keep in sync. */
 [data-dsc-card]:hover::after,
 [data-dsc-card]:focus-within::after,
-[data-dsc-card][data-dsc-selected]::after {
+[data-dsc-card][aria-selected='true']::after {
   background: transparent;
 }
 

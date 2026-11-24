@@ -28,9 +28,6 @@ export const ENTER_ATTR = 'data-dsc-enter'
 /** Every session row the official sidebar renders, archived ones included. */
 export const ROW_SELECTOR = '[data-row-key^="session:"]'
 
-/** The id of the one style element this plugin owns. */
-export const STYLE_ID = 'dsh-session-card-styles'
-
 /**
  * Read the session id out of a row's `data-row-key`.
  * @param row - a session row element.

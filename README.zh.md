@@ -86,7 +86,7 @@ pnpm verify   # tsc --noEmit && vitest run && node scripts/build.mjs
 src/
   core/       prompt 摘要、子会话计数、预设读取（纯函数，有单测）
   host/       唯一的只读路由 + 结构化 Host 契约
-  client/     行绘制、设置行、轮询与样式注入
+  client/     行绘制、设置行、轮询与样式表安装
 docs/
   showcase.html        中文介绍页（截图就是从它来的）
   showcase.en.html     英文介绍页

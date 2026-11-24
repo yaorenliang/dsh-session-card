@@ -2,7 +2,8 @@
  * The browser half of dsh-session-card.
  *
  * Three things happen here:
- *  1. the card stylesheet is installed once per document;
+ *  1. the card stylesheet is installed once per document, ordered after every
+ *     style element the platform installed;
  *  2. a controller keeps a per-row fact cache warm by polling the Host route;
  *  3. a painter decorates the sidebar rows the official component rendered.
  *
@@ -20,13 +21,14 @@ import { countRunningDescendants, type CountableSession } from '../core/counts.t
 import { collectPresets, type PresetSource } from '../core/preset.ts'
 import { fetchRows, type RowFacts } from './api.ts'
 import { loadFacts, saveFacts } from './facts-cache.ts'
-import { ROW_SELECTOR, STYLE_ID, sessionIdOf } from './anchors.ts'
+import { ROW_SELECTOR, sessionIdOf } from './anchors.ts'
 import { resolveLocale, translate, type CardLocale, type MessageKey } from './i18n.ts'
 import { paintTree } from './painter.ts'
 import { CardSettingsRow, type CardSettings, type SettingsRowInjected } from './settings.tsx'
 import { SETTINGS_STYLESHEET } from './settings-stylesheet.ts'
 import { browserStorage, loadSettings, saveSettings } from './settings-store.ts'
 import { STYLESHEET } from './stylesheet.ts'
+import { installStylesheet } from './stylesheet-install.ts'
 
 export const name = 'dsh-session-card-client'
 export const inject = ['slots', 'sessions', 'workspaces']
@@ -64,23 +66,6 @@ interface ClientServices {
   effect(disposer: () => (() => void) | void, label?: string): unknown
 }
 
-/**
- * Install a stylesheet once per document.
- * @param doc - the document to style.
- * @param id - the style element id.
- * @param css - the stylesheet text.
- * @returns a disposer that removes it.
- */
-function installStyles(doc: Document, id: string, css: string): () => void {
-  const existing = doc.getElementById(id)
-  if (existing !== null) return () => {}
-  const style = doc.createElement('style')
-  style.id = id
-  style.textContent = css
-  doc.head.append(style)
-  return () => { style.remove() }
-}
-
 /** Locale of the running app, from the document tag the shell keeps in sync. */
 function currentLocale(): CardLocale {
   return resolveLocale(document.documentElement.lang)
@@ -108,7 +93,7 @@ export function apply(ctx: Context): void {
   let disposed = false
 
   services.effect(
-    () => installStyles(document, STYLE_ID, STYLESHEET + '\n' + SETTINGS_STYLESHEET),
+    () => installStylesheet(document, STYLESHEET + '\n' + SETTINGS_STYLESHEET),
     'dsh-session-card: stylesheet',
   )
 

@@ -2,6 +2,29 @@
 
 [English](./CHANGELOG.md) | 中文
 
+## 0.1.2 — 2026-11-24
+
+在 DSH 0.2.3 上，卡片被压成了一行。这不是 CSS 写错了：输掉的那些规则本身
+从来没错，只是被投到了少数票。
+
+0.2.2 及以前，每个 client 模块在自己的 factory 里插一份 `<style>`，所以应用得晚的
+插件也落在层叠的后面，与平台自己的行规则同权重时能赢。从 0.2.3 起，renderer 把各
+模块的样式收上来，按模块顺序统一插进 `document.head`，且发生在任何插件 factory 执行
+之前。于是自己插的元素恒排在平台样式之前，所有同权重声明一律输：
+`[data-dsc-card] { display: grid; height: auto }`（0,1,0）对
+`.sessionRow { display: flex; height: 32px }`（0,1,0），结果是 flex 与 32px——
+卡片那三行被排进了一个 32px 的 flex 行里。实测被覆盖的声明共 10 条。
+
+现在样式表是一份由文档 adopted 的构造式样式表（`new CSSStyleSheet()` →
+`document.adoptedStyleSheets`）。按规范，adopted 表在层叠序上排在 `document.styleSheets`
+里的一切之后，所以这些规则赢的理由不再取决于谁先跑、不取决于权重，也不用 `!important`；
+顺带，卸载插件如今是真的把样式拿掉，而旧的 `<style id>` 从未定义过这件事。
+
+一份产物仍同时服务两条版本线：`engines.dsh` 没有改。为旧做法撑着的三处状态一并删掉：
+`STYLE_ID` 与 `getElementById` 早退分支、`[data-dsc-selected]` 那条规则（从来没有代码写过
+这个属性，改为读官方行本来就带的 `aria-selected`）、以及 `data-dsc-card` 上的 `full`/`slim`
+值（没有任何选择器读它）。
+
 ## 0.1.1 — 2026-11-23
 
 封面图现在换成了插件市场真正会显示的那一张。市场抓取 `README.md`（从不抓 `README.zh.md`），

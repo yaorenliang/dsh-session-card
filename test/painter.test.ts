@@ -45,7 +45,7 @@ describe('paintRow', () => {
       const row = makeRow(doc, 'a')
       doc.body.append(row)
       paintRow(row, { prompt: '你好', jobs: 0 }, 0, undefined, BASE)
-      expect(row.getAttribute(ROW_ATTR)).toBe('slim')
+      expect(row.getAttribute(ROW_ATTR)).toBe('')
       const prompt = row.querySelector('[data-dsc-role="prompt"]')
       expect(prompt?.textContent).toBe('你好')
       expect(prompt?.hasAttribute('data-dsc-empty')).toBe(false)
@@ -66,23 +66,23 @@ describe('paintRow', () => {
     })
   })
 
-  it('renders both badges and reports the full card', () => {
+  it('renders both badges on a reachable row', () => {
     withDoc((doc) => {
       const row = makeRow(doc, 'a')
       doc.body.append(row)
       paintRow(row, { prompt: '你好', jobs: 1 }, 2, undefined, BASE)
-      expect(row.getAttribute(ROW_ATTR)).toBe('full')
+      expect(row.getAttribute(ROW_ATTR)).toBe('')
       expect(row.querySelectorAll('[data-dsc-chip]').length).toBe(2)
     })
   })
 
-  it('keeps a full-height card with zero counts while the badge line is sticky', () => {
+  it('keeps the badge line with zero counts while it is sticky', () => {
     withDoc((doc) => {
       const row = makeRow(doc, 'a')
       doc.body.append(row)
       const kept = paintRow(row, { jobs: 0 }, 0, undefined, { ...BASE, stickyChips: true })
       expect(kept).toBe(true)
-      expect(row.getAttribute(ROW_ATTR)).toBe('full')
+      expect(row.getAttribute(ROW_ATTR)).toBe('')
       const chips = row.querySelectorAll('[data-dsc-chip]')
       expect(chips.length).toBe(2)
       expect(chips[0]?.textContent).toBe('0')
@@ -174,7 +174,7 @@ describe('paintTree', () => {
       doc.body.append(live, archived)
       const facts = { live: { prompt: '你好', jobs: 0 }, archived: { prompt: '旧问题', jobs: 0 } }
       expect(paintTree(doc, facts, new Map(), new Map(), new Set(['archived']), BASE, true)).toBe(1)
-      expect(live.getAttribute(ROW_ATTR)).toBe('slim')
+      expect(live.getAttribute(ROW_ATTR)).toBe('')
       expect(archived.getAttribute(ROW_ATTR)).toBeNull()
       expect(paintTree(doc, facts, new Map(), new Map(), new Set(['archived']), BASE, false)).toBe(0)
       expect(live.getAttribute(ROW_ATTR)).toBeNull()

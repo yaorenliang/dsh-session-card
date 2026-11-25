@@ -20,6 +20,8 @@ export interface CardSettings {
   showChips: boolean
   /** Whether the badge line stays once the card is up, even with nothing running. */
   stickyChips: boolean
+  /** Whether a session created from now on is pinned as it appears. */
+  autoPinNew: boolean
 }
 
 /** The row's injected face. */
@@ -40,6 +42,7 @@ export type SettingsTextKey =
   | 'settings.showPrompt'
   | 'settings.showChips'
   | 'settings.stickyChips'
+  | 'settings.autoPinNew'
 
 /**
  * Render the card settings row.
@@ -58,6 +61,10 @@ export function CardSettingsRow({ initial, update, t }: SettingsRowInjected) {
     { key: 'showPrompt', label: t('settings.showPrompt'), off: !settings.enabled },
     { key: 'showChips', label: t('settings.showChips'), off: !settings.enabled },
     { key: 'stickyChips', label: t('settings.stickyChips'), off: !settings.enabled || !settings.showChips },
+    /* Deliberately independent of the card switches: pinning is a fact about
+       the session list, and a person who turned the card off may still want
+       today's sessions gathered at the top. */
+    { key: 'autoPinNew', label: t('settings.autoPinNew'), off: false },
   ]
   return (
     <div className="dsc-settings-group">

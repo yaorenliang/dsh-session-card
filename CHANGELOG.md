@@ -2,6 +2,16 @@
 
 English | [中文](./CHANGELOG.zh.md)
 
+## 0.1.8 — 2026-11-25
+
+New switch: **pin new sessions**, the fifth one under Settings → General, **off by default**.
+
+It writes DSH's own pin set (`pinnedSessionIds`), so a pin survives refreshes, restarts and browser changes, and the official "Unpin session" keeps working; the plugin paints no pin marker of its own. It affects only sessions created after it is switched on — nothing already on screen is pinned, because the first complete listing of a page load is recorded and never acted on.
+
+Newness has one witness: an id that was not in the previous listing. DSH reuses unused blank sessions — while a Workspace still holds one, "new session" starts the conversation in that row rather than creating one, so nothing was created and nothing is pinned. Delegated and archived sessions are skipped — lifting a child nobody opened above the conversation being watched would be wrong.
+
+The pin set only grows, which is the platform's design: left on, the pinned area gets long and unpinning is manual.
+
 ## 0.1.6 — 2026-11-24
 
 The registry works again, so the install section says the ordinary thing:

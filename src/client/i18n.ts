@@ -24,11 +24,12 @@ const ZH = {
   'jobs.other': '{n} 个后台任务',
   'preset.hint': '智能体预设 {t}',
   'settings.title': '会话行卡片',
-  'settings.description': '在会话标题下显示你最后问的那句话，以及这一族正在运行的子智能体和后台任务。',
+  'settings.description': '在会话标题下显示你最后问的那句话，以及这一族正在运行的子智能体和后台任务。最后一项管的是侧边栏的会话顺序，与卡片显示无关。',
   'settings.enable': '启用卡片',
   'settings.showPrompt': '显示提问行',
   'settings.showChips': '显示运行徽标',
   'settings.stickyChips': '徽标常驻',
+  'settings.autoPinNew': '新建会话默认置顶',
 } as const
 
 export type MessageKey = keyof typeof ZH
@@ -40,11 +41,12 @@ const EN: Record<MessageKey, string> = {
   'jobs.other': '{n} background tasks',
   'preset.hint': 'Agent preset {t}',
   'settings.title': 'Session row cards',
-  'settings.description': 'Show what you last asked, and the subagents and background tasks running under this session, beneath each session title.',
+  'settings.description': 'Show what you last asked, and the subagents and background tasks running under this session, beneath each session title. The last switch changes the sidebar order instead, whether or not the card is on.',
   'settings.enable': 'Enable cards',
   'settings.showPrompt': 'Show the question line',
   'settings.showChips': 'Show running badges',
   'settings.stickyChips': 'Keep badges while idle',
+  'settings.autoPinNew': 'Pin new sessions',
 }
 
 const DICTS: Record<CardLocale, Record<MessageKey, string>> = { zh: ZH, en: EN }

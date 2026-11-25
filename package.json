@@ -1,6 +1,6 @@
 {
   "name": "@yaorenliang/dsh-session-card",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "description": "DeepSeek Harness 侧边栏会话行卡片：标题、你最后问的那句、运行中的子智能体与后台任务。",
   "type": "module",
   "license": "MIT",

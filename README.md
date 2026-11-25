@@ -34,7 +34,19 @@ When a card appears, lines 2 and 3 open downward inside the cells they already o
 - **Unrecognised row structure** (a DSH upgrade changed the row DOM) — that row is skipped, the rest carry on.
 - **Switched off in Settings** — everything falls back to the official row.
 
-The switches live at the bottom of **Settings → General**: enable cards / show the question line / show running badges / keep badges while idle (on by default). State is kept in `localStorage` under `dsh-session-card:settings`.
+The switches live at the bottom of **Settings → General**: enable cards / show the question line / show running badges / keep badges while idle (on by default), and **pin new sessions (off by default)**. State is kept in `localStorage` under `dsh-session-card:settings`.
+
+## Pinning new sessions
+
+The last switch writes to DSH's own pin set (`pinnedSessionIds`), not to a mark this plugin paints: once it is on, a session created from then on appears at the top of the sidebar and stays there across refreshes, restarts and browsers, and the official "Unpin session" still puts it back in the ordinary order.
+
+The boundaries are deliberate:
+
+- **Off by default.** It writes the order the Host persists, and rearranging someone's list on install is not a decision a plugin gets to make.
+- **Not retroactive.** Turning it on affects what comes next; the sessions already on screen are left alone. The first complete listing of a page load is recorded and never acted on.
+- **Only a new id counts.** The test is an id that was not in the previous listing. If the Workspace still holds an unused blank session, "new session" starts the conversation in that row instead of creating one — the row was already where it belongs, so nothing is created and nothing is pinned.
+- **Delegated sessions are skipped.** A subagent's child would otherwise be lifted above the conversation actually being watched. Archived sessions are skipped too.
+- **The cost that cannot be removed:** the pin set only grows (that is DSH's design, not this plugin's choice). Left on while starting sessions all day, the pinned area gets long, and unpinning them is manual. The plugin will not delete platform data on your behalf.
 
 ## Where the data comes from
 
@@ -44,6 +56,7 @@ The switches live at the bottom of **Settings → General**: enable cards / show
 | Background task count | `jobs.list()`, counting only what this session owns and is running |
 | Subagent count | computed in the browser from `parentId` + `running` in the session list |
 | Agent preset | `projectionValues.agentPreset` from that same session list (the official `agentPreset` projection) |
+| Which sessions are new | that same session list — `ids`, `parentId`, `origin` — plus `pinnedSessionIds` and `archivedSessionIds` from `workspaces.list` |
 
 **The preset costs nothing.** The sidebar already holds that snapshot while it renders (`title`, `tokenUsage` and `agentPreset` arrive together), and the pass that counts running subagents has already walked it, so reading the preset is one more field on the same pass — no request, no disk read, no extra loop.
 

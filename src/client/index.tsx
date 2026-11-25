@@ -18,6 +18,7 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import { countRunningDescendants, type CountableSession } from '../core/counts.ts'
+import { observe, planAutoPin, type AutoPinRow, type Observed } from '../core/pin-new.ts'
 import { collectPresets, type PresetSource } from '../core/preset.ts'
 import { fetchRows, type RowFacts } from './api.ts'
 import { loadFacts, saveFacts } from './facts-cache.ts'
@@ -32,6 +33,12 @@ import { installStylesheet } from './stylesheet-install.ts'
 
 export const name = 'dsh-session-card-client'
 export const inject = ['slots', 'sessions', 'workspaces']
+
+/** The list fields that tell a new session from one that was already there. */
+interface PinCandidacy {
+  readonly parentId?: string | undefined
+  readonly origin?: string | undefined
+}
 
 /** How often the Host is asked while the sidebar is visible. */
 const POLL_INTERVAL_MS = 2500
@@ -52,16 +59,22 @@ interface ClientServices {
     readonly list: {
       getSnapshot(): {
         readonly ids: readonly string[]
-        readonly byId: Record<string, (CountableSession & PresetSource) | undefined>
+        readonly byId: Record<string, (CountableSession & PresetSource & PinCandidacy) | undefined>
+        readonly phase: 'pending' | 'ready'
       }
       subscribe(listener: () => void): () => void
     }
   }
   readonly workspaces: {
     readonly list: {
-      getSnapshot(): { readonly archivedSessionIds: readonly string[] }
+      getSnapshot(): {
+        readonly archivedSessionIds: readonly string[]
+        readonly pinnedSessionIds: readonly string[]
+      }
       subscribe(listener: () => void): () => void
     }
+    /** Put one known session ahead of every unpinned one, durably. */
+    pinSession(sessionId: string): Promise<void>
   }
   effect(disposer: () => (() => void) | void, label?: string): unknown
 }
@@ -87,6 +100,15 @@ export function apply(ctx: Context): void {
      safer boundary than a frame, because the sidebar mounts on its own
      schedule after this module is applied. */
   const bootedAt = performance.now()
+  /**
+   * What the last pass saw, so the next one can tell new from old.
+   *
+   * Undefined until the first complete listing of a page load arrives: that
+   * listing is the backlog, and recording it without acting on it is what makes
+   * switching the preference on mean "from now on" rather than "everything I
+   * can see".
+   */
+  let observed: Observed | undefined
   let poller: number | undefined
   let pollAbort: AbortController | undefined
   let mutationTimer: number | undefined
@@ -131,6 +153,79 @@ export function apply(ctx: Context): void {
       running: countRunningDescendants(sessions),
       presets: collectPresets(snapshot.byId, snapshot.ids),
     }
+  }
+
+  /**
+   * Pin the sessions that appeared since the last look, when asked to.
+   *
+   * The list is the only source of truth here: it says which rows exist, which
+   * of them are delegated, which are archived, and which are already pinned.
+   * This pass reads it once, decides once per session, and then writes nothing
+   * until someone creates another one.
+   *
+   * Two states must never be confused. The first complete listing of a page
+   * load is a backlog: it is recorded as already seen, so turning the switch on
+   * does not reach back and rearrange everything that was there before. A
+   * session that shows up afterwards is new, and that is the one this pins.
+   *
+   * Failures are silent on purpose. A pin that the Host refuses (the session
+   * vanished between listing and request) leaves the row exactly as it was,
+   * and the next session still gets its turn.
+   */
+  const pinNewSessions = (): void => {
+    if (disposed) return
+    const snapshot = services.sessions.list.getSnapshot()
+    /* A list that has not completed one pull yet says "nothing arrived", not
+       "nothing exists". Recording it would bury the real backlog under a
+       half-built one, so the pass waits for a listing worth trusting. */
+    if (snapshot.phase !== 'ready') return
+
+    const rows: (AutoPinRow & PinCandidacy)[] = []
+    for (const id of snapshot.ids) {
+      const row = snapshot.byId[id]
+      if (row === undefined) continue
+      rows.push({ id: row.id, parentId: row.parentId, origin: row.origin })
+    }
+
+    /* The first complete listing of a page load is the backlog: everything in
+       it existed before this module started watching, so it is recorded and
+       nothing is pinned. A session started in the half second before the list
+       arrived is therefore not treated as new — the safe direction, because a
+       pin nobody asked for is easy to resent and hard to notice. */
+    if (observed === undefined) {
+      observed = observe(rows)
+      return
+    }
+
+    if (!settings.autoPinNew) {
+      /* Still recorded while the switch is off, so turning it on affects what
+         comes next instead of reaching back over everything on screen. */
+      observed = observe(rows)
+      return
+    }
+
+    const host = services.workspaces.list.getSnapshot()
+    const plan = planAutoPin({
+      previous: observed,
+      rows,
+      pinned: new Set(host.pinnedSessionIds),
+      archived: new Set(host.archivedSessionIds),
+    })
+    /* Recorded before anything is awaited: an overlapping pass then sees these
+       sessions as known and cannot decide about them a second time. */
+    observed = plan.observed
+    if (plan.targets.length === 0) return
+
+    void (async () => {
+      for (const id of plan.targets) {
+        try {
+          await services.workspaces.pinSession(id)
+        } catch {
+          /* The Host refused: the row keeps the official form and its place,
+             and the sessions behind it still get their turn. */
+        }
+      }
+    })()
   }
 
   /** Repaint every row from the current cache. */
@@ -222,16 +317,22 @@ export function apply(ctx: Context): void {
     const observer = new MutationObserver(onMutations)
     observer.observe(document.body, { childList: true, subtree: true })
     const unsubscribeSessions = services.sessions.list.subscribe(scheduleRepaint)
+    /* Pinning reads the same snapshot the sidebar draws from, so it runs on the
+       same invalidation — but on its own subscription, because it must see the
+       list even while the card is switched off. */
+    const unsubscribePin = services.sessions.list.subscribe(pinNewSessions)
     const unsubscribeWorkspaces = services.workspaces.list.subscribe(scheduleRepaint)
     poller = window.setInterval(() => { void refresh() }, POLL_INTERVAL_MS)
     /* Rows the sidebar already mounted get their card in this frame, from the
        facts kept locally, rather than one network round trip later. */
     repaint()
+    pinNewSessions()
     void refresh()
     return () => {
       disposed = true
       observer.disconnect()
       unsubscribeSessions()
+      unsubscribePin()
       unsubscribeWorkspaces()
       if (poller !== undefined) window.clearInterval(poller)
       if (mutationTimer !== undefined) window.clearTimeout(mutationTimer)

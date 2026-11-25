@@ -11,8 +11,21 @@ import type { CardSettings } from './settings.tsx'
 /** The browser storage key. */
 const STORAGE_KEY = 'dsh-session-card:settings'
 
-/** Everything on, badge line steady: switching the card on keeps its height fixed. */
-const DEFAULTS: CardSettings = { enabled: true, showPrompt: true, showChips: true, stickyChips: true }
+/**
+ * Everything on, badge line steady: switching the card on keeps its height fixed.
+ *
+ * The new-session pin is the one default that is off, and off is the whole
+ * point: it writes to the Host's durable pin set, which moves rows in the
+ * sidebar and outlives the browser. An upgrade must not start reorganising a
+ * list nobody asked it to touch, so this stays a switch a person turns on.
+ */
+const DEFAULTS: CardSettings = {
+  enabled: true,
+  showPrompt: true,
+  showChips: true,
+  stickyChips: true,
+  autoPinNew: false,
+}
 
 /**
  * Read the saved preferences.
@@ -30,6 +43,7 @@ export function loadSettings(storage: Storage | undefined): CardSettings {
       showPrompt: typeof parsed.showPrompt === 'boolean' ? parsed.showPrompt : DEFAULTS.showPrompt,
       showChips: typeof parsed.showChips === 'boolean' ? parsed.showChips : DEFAULTS.showChips,
       stickyChips: typeof parsed.stickyChips === 'boolean' ? parsed.stickyChips : DEFAULTS.stickyChips,
+      autoPinNew: typeof parsed.autoPinNew === 'boolean' ? parsed.autoPinNew : DEFAULTS.autoPinNew,
     }
   } catch {
     return DEFAULTS
